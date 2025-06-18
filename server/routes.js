@@ -1,6 +1,7 @@
 const express = require('express');
 const { createServer } = require('http');
-const connectDB = require('./config/database.js');
+const cookieParser = require('cookie-parser');
+const corsMiddleware = require('./middleware/cors.js');
 
 // Import middleware
 const { authenticateToken, authorizeRoles, checkUnitAccess } = require('./middleware/auth.js');
@@ -23,6 +24,9 @@ const settingsController = require('./controllers/settingsController.js');
 const { USER_ROLES } = require('../shared/schema.js');
 
 async function registerRoutes(app) {
+  // CORS and parsing middleware
+  app.use(corsMiddleware);
+  app.use(cookieParser());
 
   // Auth routes (public)
   app.post('/api/auth/login', authController.login);

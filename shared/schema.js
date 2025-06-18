@@ -1,5 +1,5 @@
 // User roles and permissions
-export const USER_ROLES = {
+const USER_ROLES = {
   SUPER_USER: 'Super User',
   UNIT_HEAD: 'Unit Head',
   PRODUCTION: 'Production',
@@ -8,7 +8,7 @@ export const USER_ROLES = {
   ACCOUNTS: 'Accounts'
 };
 
-export const MODULES = {
+const MODULES = {
   DASHBOARD: 'Dashboard',
   ORDERS: 'Orders',
   MANUFACTURING: 'Manufacturing',
@@ -22,36 +22,46 @@ export const MODULES = {
   SETTINGS: 'Settings'
 };
 
-export const PERMISSIONS = {
+const PERMISSIONS = {
   VIEW: 'view',
   EDIT: 'edit',
   ALTER: 'alter'
 };
 
-export const ORDER_STATUS = {
+const ORDER_STATUS = {
   NEW: 'New',
   IN_PROGRESS: 'In Progress',
   COMPLETED: 'Completed',
   DISPATCHED: 'Dispatched'
 };
 
-export const PRODUCTION_STATUS = {
+const PRODUCTION_STATUS = {
   PENDING: 'Pending',
   IN_PROGRESS: 'In Progress',
   COMPLETED: 'Completed',
   ON_HOLD: 'On Hold'
 };
 
-export const DISPATCH_STATUS = {
+const DISPATCH_STATUS = {
   PENDING: 'Pending',
   IN_TRANSIT: 'In Transit',
   DELIVERED: 'Delivered',
   CANCELLED: 'Cancelled'
 };
 
-export const PAYMENT_STATUS = {
+const PAYMENT_STATUS = {
   PENDING: 'Pending',
   PAID: 'Paid',
   OVERDUE: 'Overdue',
   CANCELLED: 'Cancelled'
+};
+
+module.exports = {
+  USER_ROLES,
+  MODULES,
+  PERMISSIONS,
+  ORDER_STATUS,
+  PRODUCTION_STATUS,
+  DISPATCH_STATUS,
+  PAYMENT_STATUS
 };

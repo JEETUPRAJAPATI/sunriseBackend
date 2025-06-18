@@ -1,6 +1,6 @@
-import mongoose from 'mongoose';
-import bcrypt from 'bcrypt';
-import { USER_ROLES } from '../../shared/schema.js';
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const { USER_ROLES } = require('../../shared/schema.js');
 
 const userSchema = new mongoose.Schema({
   username: {
