@@ -1,4 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
+import { createServer } from "http";
 import { setupVite, serveStatic, log } from "./vite";
 
 // Import ES modules
@@ -7,8 +8,7 @@ import connectDB from "./config/database.js";
 import createSeedUsers from "./seed/seedUsers.js";
 
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+// Basic middleware - JSON parsing will be handled by API router
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -48,8 +48,11 @@ app.use((req, res, next) => {
     // Create seed users after database connection
     await createSeedUsers();
     
+    // Create HTTP server first
+    const server = createServer(app);
+
     // Register API routes BEFORE Vite middleware
-    const server = await registerRoutes(app);
+    await registerRoutes(app);
     log("API routes registered successfully");
 
     // Setup Vite/static serving AFTER API routes  
