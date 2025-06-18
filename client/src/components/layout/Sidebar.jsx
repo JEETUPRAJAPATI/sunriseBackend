@@ -19,7 +19,8 @@ import {
   Receipt,
   Settings,
   LogOut,
-  Factory
+  Factory,
+  Shield
 } from 'lucide-react';
 
 const menuItems = [
