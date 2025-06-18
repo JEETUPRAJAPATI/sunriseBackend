@@ -2,7 +2,7 @@ import User from '../models/User.js';
 import { generateToken } from '../middleware/auth.js';
 import { getUserModules } from '../utils/permissions.js';
 
-export const login = async (req, res) => {
+const login = async (req, res) => {
   try {
     const { username, password } = req.body;
 
@@ -57,7 +57,7 @@ export const login = async (req, res) => {
   }
 };
 
-export const logout = async (req, res) => {
+const logout = async (req, res) => {
   try {
     res.clearCookie('token');
     res.json({ message: 'Logout successful' });
@@ -67,7 +67,7 @@ export const logout = async (req, res) => {
   }
 };
 
-export const getCurrentUser = async (req, res) => {
+const getCurrentUser = async (req, res) => {
   try {
     const user = req.user;
     const userModules = getUserModules(user.role);
@@ -89,7 +89,7 @@ export const getCurrentUser = async (req, res) => {
   }
 };
 
-export const changePassword = async (req, res) => {
+const changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
 
