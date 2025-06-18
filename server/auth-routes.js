@@ -25,19 +25,42 @@ router.post('/auth/login', async (req, res) => {
       return res.status(400).json({ message: 'Username and password are required' });
     }
 
+    console.log('Looking for user with username:', username);
+    
+    // Check all users first
+    const allUsers = await User.find({}, 'username email role');
+    console.log('All users in database:', allUsers);
+    
     const user = await User.findOne({ 
       $or: [
-        { username: username.toLowerCase() },
-        { email: username.toLowerCase() }
+        { username: username },
+        { email: username }
       ]
     });
 
+    console.log('Found user:', user ? 'Yes' : 'No');
+    if (user) {
+      console.log('User details:', {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        isActive: user.isActive,
+        passwordHash: user.password.substring(0, 20) + '...'
+      });
+    }
+
     if (!user) {
+      console.log('User not found');
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
+    console.log('Comparing password with hash...');
     const isValidPassword = await bcrypt.compare(password, user.password);
+    console.log('Password valid:', isValidPassword);
+    
     if (!isValidPassword) {
+      console.log('Invalid password');
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
