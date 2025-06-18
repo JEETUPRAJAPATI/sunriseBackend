@@ -10,13 +10,16 @@ async function throwIfResNotOk(res) {
 export async function apiRequest(method, url, data) {
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers: { 
+      "Content-Type": "application/json",
+      "Accept": "application/json"
+    },
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
 
   await throwIfResNotOk(res);
-  return res;
+  return res.json();
 }
 
 export const getQueryFn = ({ on401 = "throw" }) =>

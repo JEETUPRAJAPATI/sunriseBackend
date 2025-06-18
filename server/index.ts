@@ -51,17 +51,15 @@ app.use((req, res, next) => {
     // Create HTTP server first
     const server = createServer(app);
 
-    // Critical: Register API routes BEFORE any other middleware
-    await registerRoutes(app);
+    // Create separate API handling before Vite middleware
+    const apiApp = express();
+    await registerRoutes(apiApp);
+    
+    // Mount API routes with highest priority
+    app.use('/api', apiApp);
     log("API routes registered successfully");
 
-    // Add explicit API route protection
-    app.use('/api/*', (req, res, next) => {
-      log(`Unmatched API route: ${req.method} ${req.path}`, "warn");
-      res.status(404).json({ error: 'API endpoint not found' });
-    });
-
-    // Setup Vite/static serving last
+    // Setup Vite/static serving for everything else
     if (process.env.NODE_ENV === "production") {
       serveStatic(app);
     } else {
