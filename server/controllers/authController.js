@@ -56,7 +56,10 @@ const login = async (req, res) => {
     };
     
     console.log('Sending login response:', responseData);
-    res.json(responseData);
+    // Force end the response to prevent Vite interference
+    res.status(200);
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify(responseData));
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ message: 'Internal server error' });

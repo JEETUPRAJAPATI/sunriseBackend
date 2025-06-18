@@ -28,15 +28,19 @@ async function registerRoutes(app) {
   app.use(corsMiddleware);
   app.use(cookieParser());
 
-  // Add explicit JSON response header for API routes
+  // Add explicit JSON response header for API routes and prevent Vite interference
   app.use('/api', (req, res, next) => {
     res.setHeader('Content-Type', 'application/json');
+    res.setHeader('X-API-Route', 'true');
     next();
   });
 
   // Auth routes (public) - these must come BEFORE the protected middleware
   app.post('/api/auth/login', (req, res, next) => {
     console.log('Login route hit:', req.body);
+    // Ensure response is JSON and not intercepted by Vite
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Cache-Control', 'no-cache');
     authController.login(req, res, next);
   });
   app.post('/api/auth/logout', authController.logout);
