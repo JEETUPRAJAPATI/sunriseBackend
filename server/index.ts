@@ -50,12 +50,14 @@ app.use((req, res, next) => {
     
     // Register API routes BEFORE Vite middleware
     const server = await registerRoutes(app);
+    log("API routes registered successfully");
 
-    // Setup Vite/static serving AFTER API routes
+    // Setup Vite/static serving AFTER API routes  
     if (process.env.NODE_ENV === "production") {
       serveStatic(app);
     } else {
       await setupVite(app, server);
+      log("Vite middleware setup complete");
     }
 
     // Error handling middleware (should be last)

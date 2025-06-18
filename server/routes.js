@@ -28,6 +28,12 @@ async function registerRoutes(app) {
   app.use(corsMiddleware);
   app.use(cookieParser());
 
+  // Debug middleware to log API requests
+  app.use('/api/*', (req, res, next) => {
+    console.log(`API Request: ${req.method} ${req.path}`);
+    next();
+  });
+
   // Auth routes (public)
   app.post('/api/auth/login', authController.login);
   app.post('/api/auth/logout', authController.logout);
@@ -142,6 +148,11 @@ async function registerRoutes(app) {
   app.put('/api/settings/notifications', authorizeRoles(USER_ROLES.SUPER_USER), settingsController.updateNotificationSettings);
   app.put('/api/settings/backup', authorizeRoles(USER_ROLES.SUPER_USER), settingsController.updateBackupSettings);
   app.put('/api/settings/theme', authorizeRoles(USER_ROLES.SUPER_USER), settingsController.updateThemeSettings);
+
+  // Add a test route to verify API routing works
+  app.get('/api/test', (req, res) => {
+    res.json({ message: 'API is working', timestamp: new Date().toISOString() });
+  });
 
   const httpServer = createServer(app);
   return httpServer;
