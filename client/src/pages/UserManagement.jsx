@@ -302,14 +302,20 @@ export default function UserManagement() {
 
   const handleEditUser = (user) => {
     setSelectedUser(user);
+    // Ensure permissions object has proper structure
+    const userPermissions = user.permissions && typeof user.permissions === 'object' 
+      ? user.permissions 
+      : { ...DEFAULT_PERMISSIONS };
+    
     setFormData({
       username: user.username,
       email: user.email,
       password: '',
-      fullName: user.fullName,
+      fullName: user.fullName || '',
       role: user.role,
       unit: user.unit,
-      isActive: user.isActive
+      isActive: user.isActive,
+      permissions: userPermissions
     });
     setIsEditDialogOpen(true);
   };
@@ -380,7 +386,7 @@ export default function UserManagement() {
                 Create User
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Create New User</DialogTitle>
                 <DialogDescription>
@@ -568,6 +574,14 @@ export default function UserManagement() {
                 </div>
               </div>
               <DialogFooter>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setIsCreateDialogOpen(false)}
+                  disabled={createUserMutation.isPending}
+                >
+                  Cancel
+                </Button>
                 <Button type="submit" onClick={handleCreateUser} disabled={createUserMutation.isPending}>
                   {createUserMutation.isPending ? 'Creating...' : 'Create User'}
                 </Button>
@@ -631,7 +645,9 @@ export default function UserManagement() {
                   <TableHead>User</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Unit</TableHead>
+                  <TableHead>Permissions</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Created</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -642,6 +658,7 @@ export default function UserManagement() {
                       <div>
                         <div className="font-medium">{user.fullName || user.username}</div>
                         <div className="text-sm text-muted-foreground">{user.email}</div>
+                        <div className="text-xs text-gray-500">ID: {user._id?.slice(-6) || 'N/A'}</div>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -649,11 +666,43 @@ export default function UserManagement() {
                         {user.role}
                       </Badge>
                     </TableCell>
-                    <TableCell>{user.unit}</TableCell>
+                    <TableCell>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">{user.unit || 'N/A'}</span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {user.permissions && typeof user.permissions === 'object' ? (
+                          Object.entries(user.permissions).filter(([_, perms]) => 
+                            perms && typeof perms === 'object' && Object.values(perms).some(Boolean)
+                          ).slice(0, 3).map(([module, perms]) => (
+                            <Badge key={module} variant="outline" className="text-xs">
+                              {module}
+                            </Badge>
+                          ))
+                        ) : (
+                          <span className="text-xs text-gray-500">No permissions</span>
+                        )}
+                        {user.permissions && typeof user.permissions === 'object' && 
+                         Object.entries(user.permissions).filter(([_, perms]) => 
+                           perms && typeof perms === 'object' && Object.values(perms).some(Boolean)
+                         ).length > 3 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{Object.entries(user.permissions).filter(([_, perms]) => 
+                              perms && typeof perms === 'object' && Object.values(perms).some(Boolean)
+                            ).length - 3}
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <Badge variant={user.isActive ? 'default' : 'secondary'}>
                         {user.isActive ? 'Active' : 'Inactive'}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm text-gray-500">
+                        {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
+                      </span>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">

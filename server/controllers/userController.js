@@ -118,14 +118,16 @@ export const createUser = async (req, res) => {
     res.status(201).json({
       message: 'User created successfully',
       user: {
-        id: user._id,
+        _id: user._id,
         username: user.username,
         email: user.email,
         fullName: user.fullName,
         role: user.role,
         unit: user.unit,
-        modules: userModules,
-        isActive: user.isActive
+        permissions: user.permissions,
+        isActive: user.isActive,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt
       }
     });
   } catch (error) {
@@ -156,10 +158,12 @@ export const updateUser = async (req, res) => {
     }
 
     const updateData = {};
+    if (username) updateData.username = username;
+    if (email) updateData.email = email;
     if (fullName) updateData.fullName = fullName;
     if (role) updateData.role = role;
     if (unit) updateData.unit = unit;
-    if (permissions) updateData.permissions = permissions;
+    if (permissions !== undefined) updateData.permissions = permissions;
     if (typeof isActive === 'boolean') updateData.isActive = isActive;
 
     const updatedUser = await User.findByIdAndUpdate(
@@ -173,8 +177,16 @@ export const updateUser = async (req, res) => {
     res.json({
       message: 'User updated successfully',
       user: {
-        ...updatedUser.toJSON(),
-        modules: userModules
+        _id: updatedUser._id,
+        username: updatedUser.username,
+        email: updatedUser.email,
+        fullName: updatedUser.fullName,
+        role: updatedUser.role,
+        unit: updatedUser.unit,
+        permissions: updatedUser.permissions,
+        isActive: updatedUser.isActive,
+        createdAt: updatedUser.createdAt,
+        updatedAt: updatedUser.updatedAt
       }
     });
   } catch (error) {
