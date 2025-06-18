@@ -1,5 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
+const { registerRoutes } = require("./routes");
 import { setupVite, serveStatic, log } from "./vite";
 const connectDB = require("./config/database.js");
 
@@ -40,6 +40,10 @@ app.use((req, res, next) => {
 (async () => {
   // Connect to MongoDB
   await connectDB();
+  
+  // Create seed users after database connection
+  const createSeedUsers = require('./seed/seedUsers.js');
+  await createSeedUsers();
   
   const server = await registerRoutes(app);
 

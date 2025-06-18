@@ -73,3 +73,10 @@ const getModulePermissions = (userRole, module) => {
 const checkModuleAccess = (userRole, module) => {
   return rolePermissions[userRole]?.[module]?.length > 0 || false;
 };
+
+module.exports = {
+  hasPermission,
+  getUserModules,
+  getModulePermissions,
+  checkModuleAccess
+};
