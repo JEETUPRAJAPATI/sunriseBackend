@@ -5,11 +5,9 @@ import bcrypt from 'bcryptjs';
 
 const login = async (req, res) => {
   try {
-    console.log('Login controller called with body:', req.body);
     const { username, password } = req.body;
 
     if (!username || !password) {
-      console.log('Missing username or password');
       return res.status(400).json({ message: 'Username and password are required' });
     }
 
@@ -41,7 +39,7 @@ const login = async (req, res) => {
       maxAge: 24 * 60 * 60 * 1000 // 24 hours
     });
 
-    const responseData = {
+    res.json({
       message: 'Login successful',
       user: {
         id: user._id,
@@ -53,13 +51,7 @@ const login = async (req, res) => {
         modules: userModules
       },
       token
-    };
-    
-    console.log('Sending login response:', responseData);
-    // Force end the response to prevent Vite interference
-    res.status(200);
-    res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify(responseData));
+    });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ message: 'Internal server error' });

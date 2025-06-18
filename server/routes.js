@@ -24,40 +24,21 @@ import * as settingsController from './controllers/settingsController.js';
 import { USER_ROLES } from '../shared/schema.js';
 
 async function registerRoutes(app) {
-  // Create separate express router for API routes to avoid Vite interference
-  const apiRouter = express.Router();
-  
-  // CORS and parsing middleware for API routes only
-  apiRouter.use(corsMiddleware);
-  apiRouter.use(cookieParser());
+  // CORS and parsing middleware
+  app.use(corsMiddleware);
+  app.use(cookieParser());
 
   // Auth routes (public)
-  apiRouter.post('/auth/login', (req, res, next) => {
-    console.log('Login route hit:', req.body);
-    // Force JSON response
-    res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Cache-Control', 'no-cache');
-    authController.login(req, res, next);
-  });
-  apiRouter.post('/auth/logout', authController.logout);
-  apiRouter.get('/auth/me', authenticateToken, authController.getCurrentUser);
+  app.post('/api/auth/login', authController.login);
+  app.post('/api/auth/logout', authController.logout);
+  app.get('/api/auth/me', authenticateToken, authController.getCurrentUser);
 
-  // Protected routes middleware - only apply to non-auth routes
-  app.use('/api/users', authenticateToken);
-  app.use('/api/dashboard', authenticateToken);
-  app.use('/api/orders', authenticateToken);
-  app.use('/api/manufacturing', authenticateToken);
-  app.use('/api/dispatches', authenticateToken);
-  app.use('/api/sales', authenticateToken);
-  app.use('/api/accounts', authenticateToken);
-  app.use('/api/inventory', authenticateToken);
-  app.use('/api/customers', authenticateToken);
-  app.use('/api/suppliers', authenticateToken);
-  app.use('/api/purchases', authenticateToken);
-  app.use('/api/settings', authenticateToken);
+  // Protected routes middleware
+  app.use('/api', authenticateToken);
 
   // Auth routes (protected)
-  app.post('/api/auth/change-password', authenticateToken, authController.changePassword);
+  app.get('/api/auth/me', authController.getCurrentUser);
+  app.post('/api/auth/change-password', authController.changePassword);
 
   // User management routes
   app.get('/api/users', authorizeRoles(USER_ROLES.SUPER_USER, USER_ROLES.UNIT_HEAD), userController.getUsers);

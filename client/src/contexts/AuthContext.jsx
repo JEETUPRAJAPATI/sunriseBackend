@@ -21,8 +21,8 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuth = async () => {
     try {
-      const userData = await api.getCurrentUser();
-      setUser(userData);
+      const response = await api.get('/auth/me');
+      setUser(response.data.user);
     } catch (error) {
       setUser(null);
     } finally {
@@ -32,14 +32,13 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (credentials) => {
     try {
-      const response = await api.login(credentials);
-      setUser(response.user);
-      return { success: true, user: response.user };
+      const response = await api.post('/auth/login', credentials);
+      setUser(response.data.user);
+      return { success: true, data: response.data };
     } catch (error) {
-      console.error('Login error:', error);
       return {
         success: false,
-        message: error.message || 'Login failed'
+        error: error.response?.data?.message || 'Login failed'
       };
     }
   };
