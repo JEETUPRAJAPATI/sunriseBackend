@@ -1,0 +1,99 @@
+import { useAuth } from './useAuth';
+import { USER_ROLES, MODULES } from '@/utils/constants';
+
+export const usePermissions = () => {
+  const { user } = useAuth();
+
+  const rolePermissions = {
+    [USER_ROLES.SUPER_USER]: Object.values(MODULES),
+    [USER_ROLES.UNIT_HEAD]: [
+      MODULES.DASHBOARD,
+      MODULES.ORDERS,
+      MODULES.MANUFACTURING,
+      MODULES.DISPATCHES,
+      MODULES.SALES,
+      MODULES.ACCOUNTS,
+      MODULES.INVENTORY,
+      MODULES.CUSTOMERS,
+      MODULES.SUPPLIERS,
+      MODULES.PURCHASES
+    ],
+    [USER_ROLES.PRODUCTION]: [
+      MODULES.DASHBOARD,
+      MODULES.ORDERS,
+      MODULES.MANUFACTURING,
+      MODULES.INVENTORY
+    ],
+    [USER_ROLES.PACKING]: [
+      MODULES.DASHBOARD,
+      MODULES.ORDERS,
+      MODULES.MANUFACTURING,
+      MODULES.DISPATCHES,
+      MODULES.INVENTORY
+    ],
+    [USER_ROLES.DISPATCH]: [
+      MODULES.DASHBOARD,
+      MODULES.ORDERS,
+      MODULES.DISPATCHES,
+      MODULES.INVENTORY
+    ],
+    [USER_ROLES.ACCOUNTS]: [
+      MODULES.DASHBOARD,
+      MODULES.ORDERS,
+      MODULES.SALES,
+      MODULES.ACCOUNTS,
+      MODULES.CUSTOMERS,
+      MODULES.SUPPLIERS,
+      MODULES.PURCHASES
+    ]
+  };
+
+  const hasModuleAccess = (module) => {
+    if (!user) return false;
+    const userModules = rolePermissions[user.role] || [];
+    return userModules.includes(module);
+  };
+
+  const hasPermission = (module, permission = 'view') => {
+    if (!user) return false;
+    
+    // Super User has all permissions
+    if (user.role === USER_ROLES.SUPER_USER) return true;
+    
+    // Check if user has access to the module
+    if (!hasModuleAccess(module)) return false;
+    
+    // Define permission levels for different roles
+    const permissionLevels = {
+      [USER_ROLES.UNIT_HEAD]: ['view', 'edit', 'alter'],
+      [USER_ROLES.PRODUCTION]: ['view', 'edit'],
+      [USER_ROLES.PACKING]: ['view', 'edit'],
+      [USER_ROLES.DISPATCH]: ['view', 'edit'],
+      [USER_ROLES.ACCOUNTS]: ['view', 'edit']
+    };
+    
+    const userPermissions = permissionLevels[user.role] || ['view'];
+    return userPermissions.includes(permission);
+  };
+
+  const getUserModules = () => {
+    if (!user) return [];
+    return rolePermissions[user.role] || [];
+  };
+
+  const canManageUsers = () => {
+    return user && [USER_ROLES.SUPER_USER, USER_ROLES.UNIT_HEAD].includes(user.role);
+  };
+
+  const canAccessSettings = () => {
+    return user && user.role === USER_ROLES.SUPER_USER;
+  };
+
+  return {
+    hasModuleAccess,
+    hasPermission,
+    getUserModules,
+    canManageUsers,
+    canAccessSettings
+  };
+};
