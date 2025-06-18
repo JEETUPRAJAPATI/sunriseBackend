@@ -266,9 +266,10 @@ export default function UserManagement() {
   // Reset password mutation
   const resetPasswordMutation = useMutation({
     mutationFn: async ({ userId, newPassword }) => {
-      return await apiRequest('POST', `/api/users/${userId}/reset-password`, { password: newPassword });
+      return await apiRequest('POST', `/api/users/${userId}/reset-password`, { newPassword });
     },
     onSuccess: () => {
+      queryClient.invalidateQueries(['/api/users']);
       toast({
         title: "Success",
         description: "Password reset successfully",
@@ -335,9 +336,15 @@ export default function UserManagement() {
   };
 
   const handleResetPassword = (userId) => {
-    const newPassword = prompt('Enter new password:');
-    if (newPassword) {
+    const newPassword = prompt('Enter new password (minimum 6 characters):');
+    if (newPassword && newPassword.length >= 6) {
       resetPasswordMutation.mutate({ userId, newPassword });
+    } else if (newPassword && newPassword.length < 6) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters long",
+        variant: "destructive",
+      });
     }
   };
 

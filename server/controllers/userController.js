@@ -229,6 +229,8 @@ export const resetUserPassword = async (req, res) => {
     const { id } = req.params;
     const { newPassword } = req.body;
 
+    console.log('Reset password request:', { id, newPassword: newPassword ? '***' : 'missing' });
+
     if (!newPassword || newPassword.length < 6) {
       return res.status(400).json({ message: 'New password must be at least 6 characters long' });
     }
@@ -239,13 +241,18 @@ export const resetUserPassword = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    console.log('Found user for password reset:', { username: user.username, role: user.role });
+
     // Non-super users can only reset passwords for users from their unit
     if (req.user.role !== USER_ROLES.SUPER_USER && user.unit !== req.user.unit) {
       return res.status(403).json({ message: 'Access denied' });
     }
 
+    // Hash the new password using the pre-save middleware
     user.password = newPassword;
     await user.save();
+
+    console.log('Password reset successful for user:', user.username);
 
     res.json({ message: 'Password reset successfully' });
   } catch (error) {
