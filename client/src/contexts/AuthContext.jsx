@@ -26,7 +26,7 @@ export const AuthProvider = ({ children }) => {
       console.log('Checking authentication...');
       const response = await api.getCurrentUser();
       console.log('Auth check result:', response);
-      if (response) {
+      if (response && response.id) {
         setUser(response);
         setIsAuthenticated(true);
       } else {
