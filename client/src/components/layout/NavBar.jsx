@@ -110,9 +110,11 @@ export default function NavBar({ onSidebarToggle }) {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
+              <DropdownMenuItem asChild>
+                <a href="/profile" className="flex items-center">
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Profile</span>
+                </a>
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <Settings className="mr-2 h-4 w-4" />
