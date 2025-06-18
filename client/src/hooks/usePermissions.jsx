@@ -50,6 +50,16 @@ export const usePermissions = () => {
 
   const hasModuleAccess = (module) => {
     if (!user) return false;
+    
+    // Super User has access to all modules
+    if (user.role === USER_ROLES.SUPER_USER) return true;
+    
+    // Check user's specific permissions if available
+    if (user.permissions && user.permissions[module]) {
+      return user.permissions[module].view === true;
+    }
+    
+    // Fallback to role-based permissions for backward compatibility
     const userModules = rolePermissions[user.role] || [];
     return userModules.includes(module);
   };
@@ -60,10 +70,25 @@ export const usePermissions = () => {
     // Super User has all permissions
     if (user.role === USER_ROLES.SUPER_USER) return true;
     
-    // Check if user has access to the module
+    // Check user's specific permissions if available
+    if (user.permissions && user.permissions[module]) {
+      const modulePerms = user.permissions[module];
+      
+      // Map permission types
+      const permissionMap = {
+        'view': modulePerms.view,
+        'add': modulePerms.add,
+        'edit': modulePerms.edit,
+        'delete': modulePerms.delete,
+        'alter': modulePerms.edit || modulePerms.delete // alter is edit or delete
+      };
+      
+      return permissionMap[permission] === true;
+    }
+    
+    // Fallback to role-based permissions for backward compatibility
     if (!hasModuleAccess(module)) return false;
     
-    // Define permission levels for different roles
     const permissionLevels = {
       [USER_ROLES.UNIT_HEAD]: ['view', 'edit', 'alter'],
       [USER_ROLES.PRODUCTION]: ['view', 'edit'],
@@ -78,6 +103,15 @@ export const usePermissions = () => {
 
   const getUserModules = () => {
     if (!user) return [];
+    
+    // If user has specific permissions, return only modules with view access
+    if (user.permissions && typeof user.permissions === 'object') {
+      return Object.keys(user.permissions).filter(module => 
+        user.permissions[module] && user.permissions[module].view === true
+      );
+    }
+    
+    // Fallback to role-based permissions
     return rolePermissions[user.role] || [];
   };
 
