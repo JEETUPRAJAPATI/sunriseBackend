@@ -37,12 +37,12 @@ async function registerRoutes(app) {
   app.post('/api/auth/change-password', authenticateToken, authController.changePassword);
 
   // User management routes
-  app.get('/api/users', authorizeRoles(USER_ROLES.SUPER_USER, USER_ROLES.UNIT_HEAD), userController.getUsers);
-  app.get('/api/users/:id', authorizeRoles(USER_ROLES.SUPER_USER, USER_ROLES.UNIT_HEAD), userController.getUserById);
-  app.post('/api/users', authorizeRoles(USER_ROLES.SUPER_USER, USER_ROLES.UNIT_HEAD), userController.createUser);
-  app.put('/api/users/:id', authorizeRoles(USER_ROLES.SUPER_USER, USER_ROLES.UNIT_HEAD), userController.updateUser);
-  app.delete('/api/users/:id', authorizeRoles(USER_ROLES.SUPER_USER, USER_ROLES.UNIT_HEAD), userController.deleteUser);
-  app.post('/api/users/:id/reset-password', authorizeRoles(USER_ROLES.SUPER_USER, USER_ROLES.UNIT_HEAD), userController.resetUserPassword);
+  app.get('/api/users', authenticateToken, authorizeRoles(USER_ROLES.SUPER_USER, USER_ROLES.UNIT_HEAD), userController.getUsers);
+  app.get('/api/users/:id', authenticateToken, authorizeRoles(USER_ROLES.SUPER_USER, USER_ROLES.UNIT_HEAD), userController.getUserById);
+  app.post('/api/users', authenticateToken, authorizeRoles(USER_ROLES.SUPER_USER, USER_ROLES.UNIT_HEAD), userController.createUser);
+  app.put('/api/users/:id', authenticateToken, authorizeRoles(USER_ROLES.SUPER_USER, USER_ROLES.UNIT_HEAD), userController.updateUser);
+  app.delete('/api/users/:id', authenticateToken, authorizeRoles(USER_ROLES.SUPER_USER, USER_ROLES.UNIT_HEAD), userController.deleteUser);
+  app.post('/api/users/:id/reset-password', authenticateToken, authorizeRoles(USER_ROLES.SUPER_USER, USER_ROLES.UNIT_HEAD), userController.resetUserPassword);
 
   // Dashboard routes
   app.get('/api/dashboard/metrics', dashboardController.getDashboardMetrics);

@@ -83,17 +83,24 @@ const getCurrentUser = async (req, res) => {
     const user = req.user;
     const userModules = getUserModules(user.role);
 
-    res.json({
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        fullName: user.fullName,
-        role: user.role,
-        unit: user.unit,
+    const userResponse = {
+      id: user._id,
+      username: user.username,
+      email: user.email,
+      fullName: user.fullName,
+      role: user.role,
+      unit: user.unit,
+      isActive: user.isActive,
+      modules: userModules,
+      lastLogin: user.lastLogin,
+      permissions: {
+        canManageUsers: ['Super User', 'Unit Head'].includes(user.role),
+        canAccessSettings: user.role === 'Super User',
         modules: userModules
       }
-    });
+    };
+
+    res.json(userResponse);
   } catch (error) {
     console.error('Get current user error:', error);
     res.status(500).json({ message: 'Internal server error' });

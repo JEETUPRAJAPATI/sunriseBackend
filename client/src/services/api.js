@@ -18,14 +18,23 @@ class ApiService {
       config.body = JSON.stringify(data);
     }
 
-    const response = await fetch(`${this.baseURL}${url}`, config);
+    try {
+      const response = await fetch(`${this.baseURL}${url}`, config);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.message || `HTTP error! status: ${response.status}`;
+        console.error('API Error:', errorMessage, errorData);
+        throw new Error(errorMessage);
+      }
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      const responseData = await response.json();
+      console.log('API Response:', responseData);
+      return responseData;
+    } catch (error) {
+      console.error('API Request Error:', error);
+      throw error;
     }
-
-    return response.json();
   }
 
   async get(url) {
