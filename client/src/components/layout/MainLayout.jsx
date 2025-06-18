@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import Sidebar from './Sidebar';
-import Header from './Header';
+import SimpleHeader from './SimpleHeader';
 
 export default function MainLayout({ children, title }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);

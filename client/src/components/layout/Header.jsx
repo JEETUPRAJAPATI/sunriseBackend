@@ -50,14 +50,9 @@ export default function Header({ onSidebarToggle, title = "Dashboard" }) {
           <Button
             variant="ghost"
             size="sm"
-            onClick={toggleTheme}
             className="text-muted-foreground hover:text-foreground"
           >
-            {theme === 'dark' ? (
-              <Sun className="h-5 w-5" />
-            ) : (
-              <Moon className="h-5 w-5" />
-            )}
+            <Sun className="h-5 w-5" />
           </Button>
 
           {/* Notifications */}
