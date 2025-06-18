@@ -85,11 +85,18 @@ export default function UserManagement() {
   // Fetch users
   const { data: usersResponse, isLoading, error } = useQuery({
     queryKey: ['/api/users'],
-    enabled: true
+    enabled: true,
+    retry: 1
   });
+
+  console.log('Users response:', usersResponse);
+  console.log('Loading:', isLoading);
+  console.log('Error:', error);
 
   // Extract users from response - handle both array and object with users property
   const users = Array.isArray(usersResponse) ? usersResponse : (usersResponse?.users || []);
+  
+  console.log('Processed users:', users);
 
   // Create user mutation
   const createUserMutation = useMutation({
@@ -269,7 +276,7 @@ export default function UserManagement() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto py-8">
-      <div className="space-y-6">
+        <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -591,6 +598,7 @@ export default function UserManagement() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
     </div>
   );
