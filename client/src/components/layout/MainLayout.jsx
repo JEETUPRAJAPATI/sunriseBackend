@@ -18,7 +18,7 @@ export default function MainLayout({ children, title }) {
       <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
       
       <div className="lg:ml-64">
-        <Header onSidebarToggle={toggleSidebar} title={title} />
+        <SimpleHeader onSidebarToggle={toggleSidebar} title={title} />
         
         <main className="p-6">
           {children}
