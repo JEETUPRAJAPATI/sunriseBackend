@@ -193,20 +193,7 @@ export default function DemoAccounts() {
                       </p>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="p-3 bg-white/70 dark:bg-slate-800/70 rounded-lg backdrop-blur-sm border border-slate-200/50 dark:border-slate-600/50">
-                        <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Username</div>
-                        <div className="font-mono text-sm font-medium text-slate-700 dark:text-slate-200">
-                          {account.username}
-                        </div>
-                      </div>
-                      <div className="p-3 bg-white/70 dark:bg-slate-800/70 rounded-lg backdrop-blur-sm border border-slate-200/50 dark:border-slate-600/50">
-                        <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Password</div>
-                        <div className="font-mono text-sm font-medium text-slate-700 dark:text-slate-200">
-                          {account.password}
-                        </div>
-                      </div>
-                    </div>
+
 
                     <Button
                       onClick={() => handleLogin(account)}

@@ -141,28 +141,7 @@ export default function Sidebar({ isOpen, onClose }) {
             </Button>
           </div>
 
-          {/* User Info */}
-          <div className="px-6 py-6 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
-            <div className="flex items-center space-x-3">
-              <div className="relative">
-                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg ring-2 ring-white dark:ring-slate-800">
-                  <Users className="w-6 h-6 text-white" />
-                </div>
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-slate-800"></div>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
-                  {user?.fullName || user?.username}
-                </p>
-                <Badge variant="secondary" className="text-xs bg-white/70 dark:bg-slate-700/70 text-slate-700 dark:text-slate-300 backdrop-blur-sm">
-                  {user?.role}
-                </Badge>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  {user?.unit || 'System Administrator'}
-                </p>
-              </div>
-            </div>
-          </div>
+
 
           {/* Navigation Menu */}
           <ScrollArea className="flex-1 px-4 py-4">
