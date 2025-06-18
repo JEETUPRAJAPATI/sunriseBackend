@@ -200,4 +200,15 @@ router.post('/auth/change-password', authenticateToken, async (req, res) => {
   }
 });
 
+// Middleware to verify token
+const verifyToken = authenticateToken;
+
+// User Management Routes (Super User Only)
+router.get('/users', verifyToken, getUsers);
+router.get('/users/:id', verifyToken, getUserById);
+router.post('/users', verifyToken, createUser);
+router.put('/users/:id', verifyToken, updateUser);
+router.delete('/users/:id', verifyToken, deleteUser);
+router.post('/users/:id/reset-password', verifyToken, resetUserPassword);
+
 export default router;
