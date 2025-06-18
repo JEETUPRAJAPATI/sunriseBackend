@@ -29,31 +29,35 @@ async function registerRoutes(app) {
   app.use(express.urlencoded({ extended: false }));
   app.use(cookieParser());
 
-  // PRIORITY: Test route first to verify route registration
+  // Test route for API verification
   app.get('/api/test', (req, res) => {
-    console.log('=== TEST ROUTE EXECUTED ===');
+    console.log('TEST ROUTE HIT');
     res.json({ message: 'API working', success: true, timestamp: new Date().toISOString() });
   });
 
-  // Auth routes - CRITICAL: These must be registered BEFORE any catch-all
-  app.post('/api/auth/login', (req, res, next) => {
-    console.log('=== LOGIN ROUTE HIT ===');
-    authController.login(req, res, next);
+  // Auth routes - Public endpoints
+  app.post('/api/auth/login', (req, res) => {
+    console.log('LOGIN ROUTE HIT:', req.body);
+    authController.login(req, res);
   });
 
-  app.get('/api/auth/me', (req, res, next) => {
-    console.log('=== AUTH/ME ROUTE HIT ===');
-    authenticateToken(req, res, (err) => {
-      if (err) return next(err);
-      authController.getCurrentUser(req, res, next);
+  app.get('/api/auth/me', (req, res) => {
+    console.log('AUTH/ME ROUTE HIT');
+    authenticateToken(req, res, () => {
+      authController.getCurrentUser(req, res);
     });
   });
 
-  app.post('/api/auth/logout', authController.logout);
+  app.post('/api/auth/logout', (req, res) => {
+    console.log('LOGOUT ROUTE HIT');
+    authController.logout(req, res);
+  });
 
-  // Logging middleware
-  app.use((req, res, next) => {
-    console.log(`Route Handler: ${req.method} ${req.originalUrl}`);
+  console.log('Auth routes registered');
+
+  // Logging middleware for remaining routes
+  app.use('/api/*', (req, res, next) => {
+    console.log(`API Route: ${req.method} ${req.originalUrl}`);
     next();
   });
 
