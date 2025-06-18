@@ -1,5 +1,5 @@
-const bcrypt = require('bcryptjs');
-const User = require('../models/User.js');
+import bcrypt from 'bcryptjs';
+import User from '../models/User.js';
 
 const seedUsers = [
   {
@@ -101,6 +101,4 @@ const createSeedUsers = async () => {
   }
 };
 
-module.exports = createSeedUsers;
-module.exports.default = createSeedUsers;
-exports.createSeedUsers = createSeedUsers;
+export default createSeedUsers;

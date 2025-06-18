@@ -56,7 +56,7 @@ const PAYMENT_STATUS = {
   CANCELLED: 'Cancelled'
 };
 
-module.exports = {
+export {
   USER_ROLES,
   MODULES,
   PERMISSIONS,

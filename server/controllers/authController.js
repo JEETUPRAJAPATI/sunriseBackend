@@ -1,7 +1,7 @@
-const User = require('../models/User.js');
-const { generateToken } = require('../middleware/auth.js');
-const { getUserModules } = require('../utils/permissions.js');
-const bcrypt = require('bcryptjs');
+import User from '../models/User.js';
+import { generateToken } from '../middleware/auth.js';
+import { getUserModules } from '../utils/permissions.js';
+import bcrypt from 'bcryptjs';
 
 const login = async (req, res) => {
   try {
@@ -119,7 +119,7 @@ const changePassword = async (req, res) => {
   }
 };
 
-module.exports = {
+export {
   login,
   logout,
   getCurrentUser,
