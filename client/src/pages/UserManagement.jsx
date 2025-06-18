@@ -32,6 +32,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import PasswordUpdateModal from '@/components/modals/PasswordUpdateModal';
 import { 
   Plus, 
   Edit, 
