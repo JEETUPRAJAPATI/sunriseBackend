@@ -58,7 +58,16 @@ class ApiService {
   }
 
   async getCurrentUser() {
-    return this.get('/auth/me');
+    try {
+      const response = await this.get('/auth/me');
+      return response;
+    } catch (error) {
+      if (error.message.includes('401')) {
+        // User is not authenticated
+        return null;
+      }
+      throw error;
+    }
   }
 
   async changePassword(passwordData) {

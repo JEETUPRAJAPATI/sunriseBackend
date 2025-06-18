@@ -14,6 +14,7 @@ export const useAuthContext = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     checkAuth();
@@ -21,9 +22,14 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuth = async () => {
     try {
-      const response = await api.get('/auth/me');
-      setUser(response.data.user);
+      const response = await api.getCurrentUser();
+      if (response) {
+        setUser(response);
+      } else {
+        setUser(null);
+      }
     } catch (error) {
+      console.error('Auth check error:', error);
       setUser(null);
     } finally {
       setLoading(false);
@@ -32,14 +38,26 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (credentials) => {
     try {
-      const response = await api.post('/auth/login', credentials);
-      setUser(response.data.user);
-      return { success: true, data: response.data };
+      setLoading(true);
+      setError(null);
+      console.log('Attempting login with:', credentials);
+      
+      const response = await api.login(credentials);
+      console.log('Login response:', response);
+      
+      if (response.success && response.user) {
+        setUser(response.user);
+        return response;
+      } else {
+        throw new Error(response.message || 'Login failed');
+      }
     } catch (error) {
-      return {
-        success: false,
-        error: error.response?.data?.message || 'Login failed'
-      };
+      console.error('Login error:', error);
+      const errorMessage = error.message || 'Login failed';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 

@@ -33,12 +33,8 @@ async function registerRoutes(app) {
   app.post('/api/auth/logout', authController.logout);
   app.get('/api/auth/me', authenticateToken, authController.getCurrentUser);
 
-  // Protected routes middleware
-  app.use('/api', authenticateToken);
-
-  // Auth routes (protected)
-  app.get('/api/auth/me', authController.getCurrentUser);
-  app.post('/api/auth/change-password', authController.changePassword);
+  // Protected routes
+  app.post('/api/auth/change-password', authenticateToken, authController.changePassword);
 
   // User management routes
   app.get('/api/users', authorizeRoles(USER_ROLES.SUPER_USER, USER_ROLES.UNIT_HEAD), userController.getUsers);

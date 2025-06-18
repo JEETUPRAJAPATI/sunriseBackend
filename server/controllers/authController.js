@@ -35,21 +35,31 @@ const login = async (req, res) => {
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'lax',
       maxAge: 24 * 60 * 60 * 1000 // 24 hours
     });
 
+    const userResponse = {
+      id: user._id,
+      username: user.username,
+      email: user.email,
+      fullName: user.fullName,
+      role: user.role,
+      unit: user.unit,
+      isActive: user.isActive,
+      modules: userModules,
+      lastLogin: user.lastLogin,
+      permissions: {
+        canManageUsers: ['Super User', 'Unit Head'].includes(user.role),
+        canAccessSettings: user.role === 'Super User',
+        modules: userModules
+      }
+    };
+
     res.json({
       message: 'Login successful',
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        fullName: user.fullName,
-        role: user.role,
-        unit: user.unit,
-        modules: userModules
-      },
+      success: true,
+      user: userResponse,
       token
     });
   } catch (error) {
