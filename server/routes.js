@@ -29,32 +29,38 @@ async function registerRoutes(app) {
   app.use(express.urlencoded({ extended: false }));
   app.use(cookieParser());
 
-  // Add test route at the very beginning - BEFORE all other routes
+  // PRIORITY: Test route first to verify route registration
   app.get('/api/test', (req, res) => {
-    console.log('=== TEST ROUTE HANDLER EXECUTED ===');
-    res.setHeader('Content-Type', 'application/json');
-    res.status(200).json({ 
-      message: 'API is working', 
-      timestamp: new Date().toISOString(),
-      success: true 
+    console.log('=== TEST ROUTE EXECUTED ===');
+    res.json({ message: 'API working', success: true, timestamp: new Date().toISOString() });
+  });
+
+  // Auth routes - CRITICAL: These must be registered BEFORE any catch-all
+  app.post('/api/auth/login', (req, res, next) => {
+    console.log('=== LOGIN ROUTE HIT ===');
+    authController.login(req, res, next);
+  });
+
+  app.get('/api/auth/me', (req, res, next) => {
+    console.log('=== AUTH/ME ROUTE HIT ===');
+    authenticateToken(req, res, (err) => {
+      if (err) return next(err);
+      authController.getCurrentUser(req, res, next);
     });
   });
 
-  // Minimal logging - headers already set in main app
+  app.post('/api/auth/logout', authController.logout);
+
+  // Logging middleware
   app.use((req, res, next) => {
     console.log(`Route Handler: ${req.method} ${req.originalUrl}`);
     next();
   });
 
-  // Auth routes (public) - full API paths  
-  app.post('/api/auth/login', authController.login);
-  app.post('/api/auth/logout', authController.logout);
-  app.get('/api/auth/me', authenticateToken, authController.getCurrentUser);
-
   // Protected routes
   app.post('/api/auth/change-password', authenticateToken, authController.changePassword);
 
-  // User management routes
+  // User management routes  
   app.get('/api/users', authenticateToken, authorizeRoles(USER_ROLES.SUPER_USER, USER_ROLES.UNIT_HEAD), userController.getUsers);
   app.get('/api/users/:id', authenticateToken, authorizeRoles(USER_ROLES.SUPER_USER, USER_ROLES.UNIT_HEAD), userController.getUserById);
   app.post('/api/users', authenticateToken, authorizeRoles(USER_ROLES.SUPER_USER, USER_ROLES.UNIT_HEAD), userController.createUser);

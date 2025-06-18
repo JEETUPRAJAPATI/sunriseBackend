@@ -51,31 +51,30 @@ app.use((req, res, next) => {
     // Create HTTP server first
     const server = createServer(app);
 
-    // STEP 1: Add API route bypass middleware BEFORE anything else
+    // CRITICAL: Register API routes FIRST with complete bypass of Vite
     app.use('/api', (req, res, next) => {
-      log(`API route intercepted: ${req.method} ${req.originalUrl}`);
+      // Immediately set JSON headers to prevent any HTML responses
       res.setHeader('Content-Type', 'application/json');
       res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('X-API-Response', 'true');
       next();
     });
 
-    // STEP 2: Register API routes directly on main app
     await registerRoutes(app);
     log("API routes registered successfully");
 
-    // STEP 3: Setup Vite/static serving AFTER API routes
+    // Add catch-all for unmatched API routes BEFORE Vite
+    app.use('/api/*', (req, res) => {
+      res.status(404).json({ error: 'API endpoint not found', method: req.method, path: req.originalUrl });
+    });
+
+    // Setup Vite/static serving ONLY for non-API routes
     if (process.env.NODE_ENV === "production") {
       serveStatic(app);
     } else {
       await setupVite(app, server);
       log("Vite middleware setup complete");
     }
-
-    // STEP 4: Add API catch-all AFTER Vite setup
-    app.use('/api/*', (req, res) => {
-      log(`Unmatched API route: ${req.method} ${req.originalUrl}`);
-      res.status(404).json({ error: 'API endpoint not found' });
-    });
 
     // Error handling middleware (should be last)
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
