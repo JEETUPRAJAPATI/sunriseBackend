@@ -76,6 +76,7 @@ const DEMO_ACCOUNTS = [
 export default function DemoAccounts() {
   const [selectedAccount, setSelectedAccount] = useState(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [hoveredCard, setHoveredCard] = useState(null);
   const { login } = useAuth();
   const { toast } = useToast();
 
@@ -106,22 +107,37 @@ export default function DemoAccounts() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-blue-900 dark:to-indigo-900 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-blue-900 dark:to-indigo-900 p-4 md:p-8 relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-400/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-400/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-400/5 rounded-full blur-3xl animate-pulse delay-500"></div>
+      </div>
+      
+      <div className="max-w-7xl mx-auto relative z-10">
         {/* Header */}
-        <div className="text-center mb-12">
-          <div className="flex items-center justify-center mb-6">
-            <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
-              <Factory className="w-8 h-8 text-white" />
+        <div className="text-center mb-16">
+          <div className="flex items-center justify-center mb-8">
+            <div className="relative">
+              <div className="w-20 h-20 bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl flex items-center justify-center shadow-2xl transform hover:scale-110 transition-transform duration-300">
+                <Factory className="w-10 h-10 text-white" />
+              </div>
+              <div className="absolute -inset-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl blur opacity-20 animate-pulse"></div>
             </div>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-4">
+          <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-6 animate-fade-in">
             Manufacturing ERP Demo
           </h1>
-          <p className="text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto">
+          <p className="text-xl text-slate-600 dark:text-slate-300 max-w-3xl mx-auto leading-relaxed">
             Experience our comprehensive ERP system with role-based access control. 
-            Choose a demo account below to explore different user perspectives.
+            Choose a demo account below to explore different user perspectives and capabilities.
           </p>
+          <div className="mt-8 flex items-center justify-center space-x-2">
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+            <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce delay-100"></div>
+            <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce delay-200"></div>
+          </div>
         </div>
 
         {/* Demo Accounts Grid */}
@@ -131,13 +147,27 @@ export default function DemoAccounts() {
             const isLoading = isLoggingIn && selectedAccount === account.username;
             
             return (
-              <Card key={account.username} className="group hover:shadow-xl transition-all duration-300 border-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
-                <CardHeader className="pb-4">
+              <Card 
+                key={account.username} 
+                className="group hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 border-0 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md relative overflow-hidden"
+                onMouseEnter={() => setHoveredCard(account.username)}
+                onMouseLeave={() => setHoveredCard(null)}
+              >
+                {/* Animated Background Gradient */}
+                <div className={cn(
+                  "absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500",
+                  account.color
+                )} />
+                
+                <CardHeader className="pb-4 relative z-10">
                   <div className="flex items-center justify-between mb-4">
-                    <div className={`w-12 h-12 ${account.color} rounded-xl flex items-center justify-center shadow-lg`}>
-                      <Icon className="w-6 h-6 text-white" />
+                    <div className={cn(
+                      `w-14 h-14 ${account.color} rounded-2xl flex items-center justify-center shadow-lg transform transition-all duration-300`,
+                      hoveredCard === account.username ? "scale-110 rotate-12" : ""
+                    )}>
+                      <Icon className="w-7 h-7 text-white" />
                     </div>
-                    <Badge variant="secondary" className="text-xs font-medium">
+                    <Badge variant="secondary" className="text-xs font-medium bg-white/70 dark:bg-slate-700/70 backdrop-blur-sm">
                       {account.role}
                     </Badge>
                   </div>
@@ -151,27 +181,27 @@ export default function DemoAccounts() {
                 
                 <CardContent className="pt-0">
                   <div className="space-y-4">
-                    <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Eye className="w-4 h-4 text-slate-500" />
-                        <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                    <div className="p-4 bg-gradient-to-r from-slate-50 to-blue-50 dark:from-slate-700/50 dark:to-blue-900/20 rounded-xl border border-slate-200/50 dark:border-slate-600/50">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Eye className="w-4 h-4 text-blue-500" />
+                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">
                           Module Access
                         </span>
                       </div>
-                      <p className="text-xs text-slate-600 dark:text-slate-300">
+                      <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                         {account.permissions}
                       </p>
                     </div>
                     
-                    <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                      <div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">Username</div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="p-3 bg-white/70 dark:bg-slate-800/70 rounded-lg backdrop-blur-sm border border-slate-200/50 dark:border-slate-600/50">
+                        <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Username</div>
                         <div className="font-mono text-sm font-medium text-slate-700 dark:text-slate-200">
                           {account.username}
                         </div>
                       </div>
-                      <div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">Password</div>
+                      <div className="p-3 bg-white/70 dark:bg-slate-800/70 rounded-lg backdrop-blur-sm border border-slate-200/50 dark:border-slate-600/50">
+                        <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Password</div>
                         <div className="font-mono text-sm font-medium text-slate-700 dark:text-slate-200">
                           {account.password}
                         </div>
@@ -181,17 +211,21 @@ export default function DemoAccounts() {
                     <Button
                       onClick={() => handleLogin(account)}
                       disabled={isLoggingIn}
-                      className={`w-full ${account.color} hover:opacity-90 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-200`}
+                      className={cn(
+                        `w-full ${account.color} hover:opacity-90 text-white border-0 shadow-lg hover:shadow-2xl transition-all duration-300 relative overflow-hidden group/btn`,
+                        isLoading && selectedAccount === account.username ? "animate-pulse" : "hover:scale-105"
+                      )}
                     >
-                      {isLoading ? (
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          <span>Logging in...</span>
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
+                      {isLoading && selectedAccount === account.username ? (
+                        <div className="flex items-center gap-2 relative z-10">
+                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          <span className="font-medium">Connecting...</span>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2">
-                          <LogIn className="w-4 h-4" />
-                          <span>Login as {account.role}</span>
+                        <div className="flex items-center gap-2 relative z-10">
+                          <LogIn className="w-5 h-5 transition-transform duration-200 group-hover/btn:translate-x-1" />
+                          <span className="font-medium">Login as {account.role}</span>
                         </div>
                       )}
                     </Button>

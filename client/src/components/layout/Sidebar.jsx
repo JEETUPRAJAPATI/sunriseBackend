@@ -111,24 +111,30 @@ export default function Sidebar({ isOpen, onClose }) {
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm shadow-xl border-r border-slate-200 dark:border-slate-700 transition-transform duration-300 ease-in-out md:translate-x-0",
+        "fixed inset-y-0 left-0 z-50 w-72 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm shadow-xl border-r border-slate-200 dark:border-slate-700 transition-all duration-300 ease-in-out md:translate-x-0",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="flex flex-col h-full">
           {/* Logo and Company Name */}
           <div className="flex items-center justify-between h-16 px-6 border-b border-slate-200 dark:border-slate-700">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                <Factory className="w-5 h-5 text-white" />
+              <div className="relative">
+                <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform duration-200">
+                  <Factory className="w-6 h-6 text-white" />
+                </div>
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
               </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                ManuERP
-              </span>
+              <div>
+                <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  ManuERP
+                </span>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Enterprise Suite</p>
+              </div>
             </div>
             <Button
               variant="ghost"
               size="sm"
-              className="md:hidden text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+              className="md:hidden text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full w-8 h-8"
               onClick={onClose}
             >
               ×
@@ -136,23 +142,24 @@ export default function Sidebar({ isOpen, onClose }) {
           </div>
 
           {/* User Info */}
-          <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
-                  <Users className="w-5 h-5 text-white" />
+          <div className="px-6 py-6 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
+            <div className="flex items-center space-x-3">
+              <div className="relative">
+                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg ring-2 ring-white dark:ring-slate-800">
+                  <Users className="w-6 h-6 text-white" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
-                    {user?.fullName || user?.username}
-                  </p>
-                  <Badge variant="secondary" className="text-xs bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
-                    {user?.role}
-                  </Badge>
-                </div>
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-slate-800"></div>
               </div>
-              <div className="hidden md:block">
-                <ThemeToggle />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
+                  {user?.fullName || user?.username}
+                </p>
+                <Badge variant="secondary" className="text-xs bg-white/70 dark:bg-slate-700/70 text-slate-700 dark:text-slate-300 backdrop-blur-sm">
+                  {user?.role}
+                </Badge>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  {user?.unit || 'System Administrator'}
+                </p>
               </div>
             </div>
           </div>
@@ -170,15 +177,21 @@ export default function Sidebar({ isOpen, onClose }) {
                     <Button
                       variant={isActive ? "default" : "ghost"}
                       className={cn(
-                        "w-full justify-start h-10 px-4 transition-all duration-200",
+                        "w-full justify-start h-12 px-4 transition-all duration-200 group relative overflow-hidden",
                         isActive
-                          ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg hover:shadow-xl"
-                          : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100"
+                          ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+                          : "text-slate-700 dark:text-slate-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 hover:text-slate-900 dark:hover:text-slate-100"
                       )}
                       onClick={onClose}
                     >
-                      <Icon className="w-5 h-5 mr-3" />
-                      <span>{item.label}</span>
+                      <Icon className={cn(
+                        "w-5 h-5 mr-3 transition-all duration-200",
+                        isActive ? "drop-shadow-sm" : "group-hover:scale-110"
+                      )} />
+                      <span className="font-medium">{item.label}</span>
+                      {isActive && (
+                        <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-50" />
+                      )}
                     </Button>
                   </Link>
                 );
