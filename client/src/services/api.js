@@ -6,10 +6,13 @@ class ApiService {
   }
 
   async request(method, url, data = null) {
+    console.log(`API Request: ${method} ${this.baseURL}${url}`, data || '(no data)');
+    
     const config = {
       method,
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
       credentials: 'include',
     };
@@ -21,8 +24,20 @@ class ApiService {
     try {
       const response = await fetch(`${this.baseURL}${url}`, config);
       
+      console.log(`API Response: ${response.status} ${response.statusText}`);
+      console.log('Content-Type:', response.headers.get('content-type'));
+      
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+        const errorText = await response.text();
+        console.error('API Error Response:', errorText);
+        
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { message: `HTTP error! status: ${response.status}`, details: errorText };
+        }
+        
         const errorMessage = errorData.message || `HTTP error! status: ${response.status}`;
         console.error('API Error:', errorMessage, errorData);
         throw new Error(errorMessage);
