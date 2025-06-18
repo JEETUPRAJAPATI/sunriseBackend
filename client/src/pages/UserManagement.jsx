@@ -251,32 +251,22 @@ export default function UserManagement() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto py-8">
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          </div>
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto py-8">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-red-600">Error loading users: {error.message}</div>
-          </div>
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="text-red-600">Error loading users: {error.message}</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto py-8">
-        <div className="space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -598,8 +588,6 @@ export default function UserManagement() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-        </div>
-      </div>
     </div>
   );
 }

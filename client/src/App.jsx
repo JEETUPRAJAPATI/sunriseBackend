@@ -18,6 +18,7 @@ import Customers from "@/pages/Customers";
 import Suppliers from "@/pages/Suppliers";
 import Purchases from "@/pages/Purchases";
 import Settings from "@/pages/Settings";
+import UserManagement from "@/pages/UserManagement";
 import { useAuth } from "@/hooks/useAuth";
 import MainLayout from "@/components/layout/MainLayout";
 
@@ -101,6 +102,11 @@ function Router() {
       <Route path="/settings">
         <ProtectedRoute>
           <Settings />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/user-management">
+        <ProtectedRoute>
+          <UserManagement />
         </ProtectedRoute>
       </Route>
       <Route component={NotFound} />
