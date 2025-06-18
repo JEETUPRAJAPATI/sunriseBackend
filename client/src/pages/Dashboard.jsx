@@ -42,6 +42,15 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, [isTimerRunning]);
 
+  // Live clock functionality
+  const [currentTime, setCurrentTime] = useState(new Date());
+  React.useEffect(() => {
+    const clockInterval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(clockInterval);
+  }, []);
+
   // Format timer display
   const formatTime = (seconds) => {
     const hours = Math.floor(seconds / 3600);
@@ -89,27 +98,36 @@ export default function Dashboard() {
 
         {/* Date & Time Section - 3 columns */}
         <div className="col-span-12 md:col-span-3">
-          <Card className="h-full">
+          <Card className="h-full bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 border-indigo-200 dark:border-indigo-800">
             <CardHeader className="pb-4">
-              <CardTitle className="flex items-center text-lg">
-                <Calendar className="w-5 h-5 mr-2 text-blue-600" />
-                Date & Time
+              <CardTitle className="flex items-center text-lg text-indigo-700 dark:text-indigo-300">
+                <Calendar className="w-5 h-5 mr-2" />
+                Live Date & Time
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                <div className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                  {new Date().toLocaleDateString('en-US', { 
+              <div className="space-y-3">
+                <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                  {currentTime.toLocaleDateString('en-US', { 
                     month: 'short', 
-                    day: 'numeric',
-                    year: 'numeric'
+                    day: 'numeric'
+                  })}
+                </div>
+                <div className="text-lg font-mono text-indigo-600 dark:text-indigo-400">
+                  {currentTime.toLocaleTimeString('en-US', { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    second: '2-digit'
                   })}
                 </div>
                 <div className="text-sm text-slate-600 dark:text-slate-400">
-                  {new Date().toLocaleDateString('en-US', { weekday: 'long' })}
+                  {currentTime.toLocaleDateString('en-US', { weekday: 'long' })}
                 </div>
-                <div className="text-sm text-slate-600 dark:text-slate-400">
-                  Week {Math.ceil((new Date().getDate() + new Date().getDay()) / 7)} of {new Date().toLocaleDateString('en-US', { month: 'long' })}
+                <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                  <span>Week {Math.ceil((currentTime.getDate() + currentTime.getDay()) / 7)}</span>
+                  <span className="px-2 py-1 bg-indigo-100 dark:bg-indigo-800 rounded-full">
+                    {currentTime.toLocaleDateString('en-US', { year: 'numeric' })}
+                  </span>
                 </div>
               </div>
             </CardContent>
@@ -118,28 +136,49 @@ export default function Dashboard() {
 
         {/* Timer Section - 3 columns */}
         <div className="col-span-12 md:col-span-3">
-          <Card className="h-full">
+          <Card className="h-full bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800">
             <CardHeader className="pb-4">
-              <CardTitle className="flex items-center text-lg">
-                <Clock className="w-5 h-5 mr-2 text-green-600" />
+              <CardTitle className="flex items-center text-lg text-green-700 dark:text-green-300">
+                <Clock className="w-5 h-5 mr-2" />
                 Work Timer
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                <div className="text-2xl font-mono font-bold text-slate-900 dark:text-slate-100">
-                  {formatTime(dailyTimer)}
+              <div className="space-y-4">
+                <div className="text-center">
+                  <div className="text-3xl font-mono font-bold text-slate-900 dark:text-slate-100 mb-2">
+                    {formatTime(dailyTimer)}
+                  </div>
+                  <div className="text-sm text-green-600 dark:text-green-400">
+                    {isTimerRunning ? 'Active Session' : 'Paused'}
+                  </div>
                 </div>
-                <Button 
-                  onClick={() => setIsTimerRunning(!isTimerRunning)}
-                  variant={isTimerRunning ? "destructive" : "default"}
-                  size="sm" 
-                  className="w-full"
-                >
-                  {isTimerRunning ? 'Pause' : 'Start'}
-                </Button>
-                <div className="text-xs text-slate-500 dark:text-slate-400 text-center">
-                  Started at 9:00 AM
+                
+                <div className="flex space-x-2">
+                  <Button 
+                    onClick={() => setIsTimerRunning(!isTimerRunning)}
+                    variant={isTimerRunning ? "destructive" : "default"}
+                    size="sm" 
+                    className="flex-1"
+                  >
+                    {isTimerRunning ? 'Pause' : 'Resume'}
+                  </Button>
+                  <Button 
+                    onClick={() => setDailyTimer(0)}
+                    variant="outline"
+                    size="sm"
+                    className="px-3"
+                  >
+                    Reset
+                  </Button>
+                </div>
+                
+                <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                  <span>Started: 9:00 AM</span>
+                  <div className="flex items-center space-x-1">
+                    <div className={`w-2 h-2 rounded-full ${isTimerRunning ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
+                    <span>{isTimerRunning ? 'Live' : 'Idle'}</span>
+                  </div>
                 </div>
               </div>
             </CardContent>
