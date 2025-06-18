@@ -24,27 +24,23 @@ import * as settingsController from './controllers/settingsController.js';
 import { USER_ROLES } from '../shared/schema.js';
 
 async function registerRoutes(app) {
-  // CORS and parsing middleware
-  app.use(corsMiddleware);
-  app.use(cookieParser());
+  // Create separate express router for API routes to avoid Vite interference
+  const apiRouter = express.Router();
+  
+  // CORS and parsing middleware for API routes only
+  apiRouter.use(corsMiddleware);
+  apiRouter.use(cookieParser());
 
-  // Add explicit JSON response header for API routes and prevent Vite interference
-  app.use('/api', (req, res, next) => {
-    res.setHeader('Content-Type', 'application/json');
-    res.setHeader('X-API-Route', 'true');
-    next();
-  });
-
-  // Auth routes (public) - these must come BEFORE the protected middleware
-  app.post('/api/auth/login', (req, res, next) => {
+  // Auth routes (public)
+  apiRouter.post('/auth/login', (req, res, next) => {
     console.log('Login route hit:', req.body);
-    // Ensure response is JSON and not intercepted by Vite
+    // Force JSON response
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Cache-Control', 'no-cache');
     authController.login(req, res, next);
   });
-  app.post('/api/auth/logout', authController.logout);
-  app.get('/api/auth/me', authenticateToken, authController.getCurrentUser);
+  apiRouter.post('/auth/logout', authController.logout);
+  apiRouter.get('/auth/me', authenticateToken, authController.getCurrentUser);
 
   // Protected routes middleware - only apply to non-auth routes
   app.use('/api/users', authenticateToken);
