@@ -28,17 +28,27 @@ async function registerRoutes(app) {
   app.use(corsMiddleware);
   app.use(cookieParser());
 
-  // Auth routes (public)
+  // Auth routes (public) - these must come BEFORE the protected middleware
   app.post('/api/auth/login', authController.login);
   app.post('/api/auth/logout', authController.logout);
   app.get('/api/auth/me', authenticateToken, authController.getCurrentUser);
 
-  // Protected routes middleware
-  app.use('/api', authenticateToken);
+  // Protected routes middleware - only apply to non-auth routes
+  app.use('/api/users', authenticateToken);
+  app.use('/api/dashboard', authenticateToken);
+  app.use('/api/orders', authenticateToken);
+  app.use('/api/manufacturing', authenticateToken);
+  app.use('/api/dispatches', authenticateToken);
+  app.use('/api/sales', authenticateToken);
+  app.use('/api/accounts', authenticateToken);
+  app.use('/api/inventory', authenticateToken);
+  app.use('/api/customers', authenticateToken);
+  app.use('/api/suppliers', authenticateToken);
+  app.use('/api/purchases', authenticateToken);
+  app.use('/api/settings', authenticateToken);
 
   // Auth routes (protected)
-  app.get('/api/auth/me', authController.getCurrentUser);
-  app.post('/api/auth/change-password', authController.changePassword);
+  app.post('/api/auth/change-password', authenticateToken, authController.changePassword);
 
   // User management routes
   app.get('/api/users', authorizeRoles(USER_ROLES.SUPER_USER, USER_ROLES.UNIT_HEAD), userController.getUsers);

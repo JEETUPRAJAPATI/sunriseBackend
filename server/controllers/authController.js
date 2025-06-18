@@ -39,7 +39,7 @@ const login = async (req, res) => {
       maxAge: 24 * 60 * 60 * 1000 // 24 hours
     });
 
-    res.json({
+    const responseData = {
       message: 'Login successful',
       user: {
         id: user._id,
@@ -51,7 +51,10 @@ const login = async (req, res) => {
         modules: userModules
       },
       token
-    });
+    };
+    
+    console.log('Sending login response:', responseData);
+    res.json(responseData);
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ message: 'Internal server error' });
