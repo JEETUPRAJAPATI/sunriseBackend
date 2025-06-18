@@ -3,7 +3,7 @@ import { createServer } from "http";
 import { setupVite, serveStatic, log } from "./vite";
 
 // Import ES modules
-import { registerRoutes } from "./routes.js";
+// Removed complex route registration, using direct imports
 import connectDB from "./config/database.js";
 import createSeedUsers from "./seed/seedUsers.js";
 
@@ -60,7 +60,7 @@ app.use((req, res, next) => {
       next();
     });
 
-    await registerRoutes(app);
+    // Routes are now registered above
     log("API routes registered successfully");
 
     // Add catch-all for unmatched API routes BEFORE Vite

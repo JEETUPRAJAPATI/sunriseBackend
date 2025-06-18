@@ -22,15 +22,20 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuth = async () => {
     try {
+      console.log('Checking authentication...');
       const response = await api.getCurrentUser();
+      console.log('Auth check result:', response);
       if (response) {
         setUser(response);
+        setIsAuthenticated(true);
       } else {
         setUser(null);
+        setIsAuthenticated(false);
       }
     } catch (error) {
       console.error('Auth check error:', error);
       setUser(null);
+      setIsAuthenticated(false);
     } finally {
       setLoading(false);
     }
