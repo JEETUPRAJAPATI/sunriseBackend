@@ -5,9 +5,11 @@ import bcrypt from 'bcryptjs';
 
 const login = async (req, res) => {
   try {
+    console.log('Login controller called with body:', req.body);
     const { username, password } = req.body;
 
     if (!username || !password) {
+      console.log('Missing username or password');
       return res.status(400).json({ message: 'Username and password are required' });
     }
 

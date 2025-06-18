@@ -28,8 +28,17 @@ async function registerRoutes(app) {
   app.use(corsMiddleware);
   app.use(cookieParser());
 
+  // Add explicit JSON response header for API routes
+  app.use('/api', (req, res, next) => {
+    res.setHeader('Content-Type', 'application/json');
+    next();
+  });
+
   // Auth routes (public) - these must come BEFORE the protected middleware
-  app.post('/api/auth/login', authController.login);
+  app.post('/api/auth/login', (req, res, next) => {
+    console.log('Login route hit:', req.body);
+    authController.login(req, res, next);
+  });
   app.post('/api/auth/logout', authController.logout);
   app.get('/api/auth/me', authenticateToken, authController.getCurrentUser);
 
