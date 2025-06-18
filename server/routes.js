@@ -151,3 +151,5 @@ async function registerRoutes(app) {
 }
 
 module.exports = { registerRoutes };
+module.exports.default = { registerRoutes };
+exports.registerRoutes = registerRoutes;

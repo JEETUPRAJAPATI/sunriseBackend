@@ -1,7 +1,18 @@
 import express, { type Request, Response, NextFunction } from "express";
-const { registerRoutes } = require("./routes");
 import { setupVite, serveStatic, log } from "./vite";
-const connectDB = require("./config/database.js");
+
+// Use dynamic imports for CommonJS modules
+async function loadModules() {
+  const routesModule = await import("./routes.js");
+  const dbModule = await import("./config/database.js");
+  const seedModule = await import("./seed/seedUsers.js");
+  
+  return {
+    registerRoutes: routesModule.registerRoutes || routesModule.default.registerRoutes,
+    connectDB: dbModule.default || dbModule.connectDB,
+    createSeedUsers: seedModule.default || seedModule.createSeedUsers
+  };
+}
 
 const app = express();
 app.use(express.json());
@@ -38,14 +49,16 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Connect to MongoDB
-  await connectDB();
-  
-  // Create seed users after database connection
-  const createSeedUsers = require('./seed/seedUsers.js');
-  await createSeedUsers();
-  
-  const server = await registerRoutes(app);
+  try {
+    const { registerRoutes, connectDB, createSeedUsers } = await loadModules();
+    
+    // Connect to MongoDB
+    await connectDB();
+    
+    // Create seed users after database connection
+    await createSeedUsers();
+    
+    const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -68,11 +81,15 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = 5000;
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
-  });
+    server.listen({
+      port,
+      host: "0.0.0.0",
+      reusePort: true,
+    }, () => {
+      log(`serving on port ${port}`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
 })();

@@ -102,3 +102,5 @@ const createSeedUsers = async () => {
 };
 
 module.exports = createSeedUsers;
+module.exports.default = createSeedUsers;
+exports.createSeedUsers = createSeedUsers;
