@@ -82,6 +82,17 @@ export default function UserManagement() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [userToUpdatePassword, setUserToUpdatePassword] = useState(null);
+  
+  // Filter states
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedRole, setSelectedRole] = useState('');
+  const [selectedUnit, setSelectedUnit] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -195,6 +206,41 @@ export default function UserManagement() {
   const users = Array.isArray(usersResponse) ? usersResponse : (usersResponse?.users || []);
   
   console.log('Processed users:', users);
+
+  // Filter and search users
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = user.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         user.email?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRole = selectedRole === '' || user.role === selectedRole;
+    const matchesUnit = selectedUnit === '' || user.unit === selectedUnit;
+    const matchesStatus = selectedStatus === '' || 
+                         (selectedStatus === 'active' && user.isActive) ||
+                         (selectedStatus === 'inactive' && !user.isActive);
+    return matchesSearch && matchesRole && matchesUnit && matchesStatus;
+  });
+
+  // Pagination
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
+
+  // Get unique values for filters
+  const uniqueRoles = [...new Set(users.map(user => user.role))].filter(Boolean);
+  const uniqueUnits = [...new Set(users.map(user => user.unit))].filter(Boolean);
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setSelectedRole('');
+    setSelectedUnit('');
+    setSelectedStatus('');
+    setCurrentPage(1);
+  };
+
+  const handlePasswordUpdate = (user) => {
+    setUserToUpdatePassword(user);
+    setIsPasswordModalOpen(true);
+  };
 
   // Create user mutation
   const createUserMutation = useMutation({
