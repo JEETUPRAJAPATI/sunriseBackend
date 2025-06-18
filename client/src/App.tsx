@@ -36,7 +36,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
-      <Route path="/users" component={() => <ProtectedRoute component={UserManagement} />} />
+      <Route path="/user-management" component={() => <ProtectedRoute component={UserManagement} />} />
       <Route path="/dashboard" component={() => <ProtectedRoute component={Dashboard} />} />
       <Route path="/" component={() => <ProtectedRoute component={Dashboard} />} />
       <Route component={NotFound} />

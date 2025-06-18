@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
-import MainLayout from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -84,10 +83,13 @@ export default function UserManagement() {
   const queryClient = useQueryClient();
 
   // Fetch users
-  const { data: users = [], isLoading } = useQuery({
+  const { data: usersResponse, isLoading, error } = useQuery({
     queryKey: ['/api/users'],
     enabled: true
   });
+
+  // Extract users from response - handle both array and object with users property
+  const users = Array.isArray(usersResponse) ? usersResponse : (usersResponse?.users || []);
 
   // Create user mutation
   const createUserMutation = useMutation({
@@ -242,16 +244,31 @@ export default function UserManagement() {
 
   if (isLoading) {
     return (
-      <MainLayout title="User Management">
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto py-8">
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
         </div>
-      </MainLayout>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto py-8">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-red-600">Error loading users: {error.message}</div>
+          </div>
+        </div>
+      </div>
     );
   }
 
   return (
-    <MainLayout title="User Management">
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto py-8">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -575,6 +592,6 @@ export default function UserManagement() {
           </DialogContent>
         </Dialog>
       </div>
-    </MainLayout>
+    </div>
   );
 }

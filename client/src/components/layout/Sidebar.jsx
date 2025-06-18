@@ -180,12 +180,12 @@ export default function Sidebar({ isOpen, onClose }) {
               {user?.role === 'Super User' && (
                 <>
                   <Separator className="my-4" />
-                  <Link href="/users">
+                  <Link href="/user-management">
                     <Button
-                      variant={location === '/users' ? "default" : "ghost"}
+                      variant={location === '/user-management' ? "default" : "ghost"}
                       className={cn(
                         "w-full justify-start h-10 px-4",
-                        location === '/users'
+                        location === '/user-management'
                           ? "bg-primary text-primary-foreground shadow-sm"
                           : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                       )}
