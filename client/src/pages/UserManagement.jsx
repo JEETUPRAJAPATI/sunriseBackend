@@ -706,7 +706,7 @@ export default function UserManagement() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map((user) => (
+                {paginatedUsers.map((user) => (
                   <TableRow key={user._id}>
                     <TableCell>
                       <div>
@@ -770,7 +770,7 @@ export default function UserManagement() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleResetPassword(user._id)}
+                          onClick={() => handlePasswordUpdate(user)}
                         >
                           <Key className="h-4 w-4" />
                         </Button>
@@ -789,6 +789,36 @@ export default function UserManagement() {
               </TableBody>
             </Table>
           </CardContent>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4 px-6 pb-4">
+              <div className="text-sm text-gray-700 dark:text-gray-300">
+                Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredUsers.length)} of {filteredUsers.length} users
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
         </Card>
 
         {/* Edit User Dialog */}
@@ -985,6 +1015,16 @@ export default function UserManagement() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Password Update Modal */}
+        <PasswordUpdateModal
+          isOpen={isPasswordModalOpen}
+          onClose={() => {
+            setIsPasswordModalOpen(false);
+            setUserToUpdatePassword(null);
+          }}
+          user={userToUpdatePassword}
+        />
     </div>
   );
 }
