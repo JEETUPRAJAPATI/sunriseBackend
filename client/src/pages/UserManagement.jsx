@@ -65,6 +65,18 @@ const MODULES = [
   'Suppliers', 'Purchases', 'Settings'
 ];
 
+const PERMISSION_TYPES = ['view', 'add', 'edit', 'delete'];
+
+const DEFAULT_PERMISSIONS = MODULES.reduce((acc, module) => {
+  acc[module] = {
+    view: false,
+    add: false,
+    edit: false,
+    delete: false
+  };
+  return acc;
+}, {});
+
 export default function UserManagement() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -76,11 +88,96 @@ export default function UserManagement() {
     fullName: '',
     role: '',
     unit: '',
-    isActive: true
+    isActive: true,
+    permissions: { ...DEFAULT_PERMISSIONS }
   });
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Handle permission changes
+  const updatePermission = (module, permissionType, value) => {
+    setFormData(prev => ({
+      ...prev,
+      permissions: {
+        ...prev.permissions,
+        [module]: {
+          ...prev.permissions[module],
+          [permissionType]: value
+        }
+      }
+    }));
+  };
+
+  // Toggle all permissions for a module
+  const toggleAllModulePermissions = (module, enable) => {
+    setFormData(prev => ({
+      ...prev,
+      permissions: {
+        ...prev.permissions,
+        [module]: {
+          view: enable,
+          add: enable,
+          edit: enable,
+          delete: enable
+        }
+      }
+    }));
+  };
+
+  // Set role-based default permissions
+  const setRoleDefaultPermissions = (role) => {
+    let defaultPerms = { ...DEFAULT_PERMISSIONS };
+    
+    switch (role) {
+      case 'Super User':
+        // Super User gets all permissions
+        MODULES.forEach(module => {
+          defaultPerms[module] = { view: true, add: true, edit: true, delete: true };
+        });
+        break;
+      case 'Unit Head':
+        // Unit Head gets most permissions except system settings
+        MODULES.forEach(module => {
+          if (module === 'Settings') {
+            defaultPerms[module] = { view: true, add: false, edit: false, delete: false };
+          } else {
+            defaultPerms[module] = { view: true, add: true, edit: true, delete: false };
+          }
+        });
+        break;
+      case 'Production':
+        // Production focused permissions
+        const productionModules = ['Dashboard', 'Orders', 'Manufacturing', 'Inventory'];
+        productionModules.forEach(module => {
+          defaultPerms[module] = { view: true, add: true, edit: true, delete: false };
+        });
+        break;
+      case 'Accounts':
+        // Accounts focused permissions
+        const accountsModules = ['Dashboard', 'Sales', 'Accounts', 'Customers', 'Suppliers'];
+        accountsModules.forEach(module => {
+          defaultPerms[module] = { view: true, add: true, edit: true, delete: false };
+        });
+        break;
+      case 'Dispatch':
+        // Dispatch focused permissions
+        const dispatchModules = ['Dashboard', 'Orders', 'Dispatches', 'Customers'];
+        dispatchModules.forEach(module => {
+          defaultPerms[module] = { view: true, add: true, edit: true, delete: false };
+        });
+        break;
+      case 'Packing':
+        // Packing focused permissions
+        const packingModules = ['Dashboard', 'Orders', 'Manufacturing', 'Inventory'];
+        packingModules.forEach(module => {
+          defaultPerms[module] = { view: true, add: false, edit: true, delete: false };
+        });
+        break;
+    }
+    
+    setFormData(prev => ({ ...prev, permissions: defaultPerms }));
+  };
 
   // Fetch users
   const { data: usersResponse, isLoading, error } = useQuery({
@@ -194,7 +291,8 @@ export default function UserManagement() {
       fullName: '',
       role: '',
       unit: '',
-      isActive: true
+      isActive: true,
+      permissions: { ...DEFAULT_PERMISSIONS }
     });
   };
 
@@ -340,7 +438,10 @@ export default function UserManagement() {
                   <Label htmlFor="role" className="text-right">
                     Role
                   </Label>
-                  <Select value={formData.role} onValueChange={(value) => setFormData({...formData, role: value})}>
+                  <Select value={formData.role} onValueChange={(value) => {
+                    setFormData({...formData, role: value});
+                    setRoleDefaultPermissions(value);
+                  }}>
                     <SelectTrigger className="col-span-3">
                       <SelectValue placeholder="Select role" />
                     </SelectTrigger>
@@ -369,6 +470,66 @@ export default function UserManagement() {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+                
+                {/* Permissions Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-base font-semibold">Module Permissions</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setRoleDefaultPermissions(formData.role)}
+                    >
+                      Reset to Role Defaults
+                    </Button>
+                  </div>
+                  
+                  <div className="border rounded-lg">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-32">Module</TableHead>
+                          <TableHead className="text-center w-20">View</TableHead>
+                          <TableHead className="text-center w-20">Add</TableHead>
+                          <TableHead className="text-center w-20">Edit</TableHead>
+                          <TableHead className="text-center w-20">Delete</TableHead>
+                          <TableHead className="text-center w-20">All</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {MODULES.map((module) => {
+                          const modulePerms = formData.permissions[module] || {};
+                          const allEnabled = PERMISSION_TYPES.every(type => modulePerms[type]);
+                          
+                          return (
+                            <TableRow key={module}>
+                              <TableCell className="font-medium">{module}</TableCell>
+                              {PERMISSION_TYPES.map((permType) => (
+                                <TableCell key={permType} className="text-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={modulePerms[permType] || false}
+                                    onChange={(e) => updatePermission(module, permType, e.target.checked)}
+                                    className="h-4 w-4 rounded border-gray-300"
+                                  />
+                                </TableCell>
+                              ))}
+                              <TableCell className="text-center">
+                                <input
+                                  type="checkbox"
+                                  checked={allEnabled}
+                                  onChange={(e) => toggleAllModulePermissions(module, e.target.checked)}
+                                  className="h-4 w-4 rounded border-gray-300"
+                                />
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>
               </div>
               <DialogFooter>
@@ -494,7 +655,7 @@ export default function UserManagement() {
 
         {/* Edit User Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Edit User</DialogTitle>
               <DialogDescription>
@@ -540,7 +701,10 @@ export default function UserManagement() {
                 <Label htmlFor="edit-role" className="text-right">
                   Role
                 </Label>
-                <Select value={formData.role} onValueChange={(value) => setFormData({...formData, role: value})}>
+                <Select value={formData.role} onValueChange={(value) => {
+                  setFormData({...formData, role: value});
+                  // Don't auto-reset permissions when editing, just update role
+                }}>
                   <SelectTrigger className="col-span-3">
                     <SelectValue />
                   </SelectTrigger>
@@ -579,6 +743,66 @@ export default function UserManagement() {
                   checked={formData.isActive}
                   onCheckedChange={(checked) => setFormData({...formData, isActive: checked})}
                 />
+              </div>
+              
+              {/* Permissions Section for Edit */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label className="text-base font-semibold">Module Permissions</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setRoleDefaultPermissions(formData.role)}
+                  >
+                    Reset to Role Defaults
+                  </Button>
+                </div>
+                
+                <div className="border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-32">Module</TableHead>
+                        <TableHead className="text-center w-20">View</TableHead>
+                        <TableHead className="text-center w-20">Add</TableHead>
+                        <TableHead className="text-center w-20">Edit</TableHead>
+                        <TableHead className="text-center w-20">Delete</TableHead>
+                        <TableHead className="text-center w-20">All</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {MODULES.map((module) => {
+                        const modulePerms = formData.permissions[module] || {};
+                        const allEnabled = PERMISSION_TYPES.every(type => modulePerms[type]);
+                        
+                        return (
+                          <TableRow key={module}>
+                            <TableCell className="font-medium">{module}</TableCell>
+                            {PERMISSION_TYPES.map((permType) => (
+                              <TableCell key={permType} className="text-center">
+                                <input
+                                  type="checkbox"
+                                  checked={modulePerms[permType] || false}
+                                  onChange={(e) => updatePermission(module, permType, e.target.checked)}
+                                  className="h-4 w-4 rounded border-gray-300"
+                                />
+                              </TableCell>
+                            ))}
+                            <TableCell className="text-center">
+                              <input
+                                type="checkbox"
+                                checked={allEnabled}
+                                onChange={(e) => toggleAllModulePermissions(module, e.target.checked)}
+                                className="h-4 w-4 rounded border-gray-300"
+                              />
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
               </div>
             </div>
             <DialogFooter>
