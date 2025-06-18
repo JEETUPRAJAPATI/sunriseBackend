@@ -175,25 +175,43 @@ export default function Sidebar({ isOpen, onClose }) {
                 );
               })}
 
-              {/* Settings (Super User Only) */}
-              {hasModuleAccess('Settings') && (
+              {/* Super User Only Items */}
+              {user?.role === 'Super User' && (
                 <>
                   <Separator className="my-4" />
-                  <Link href="/settings">
+                  <Link href="/users">
                     <Button
-                      variant={location === '/settings' ? "default" : "ghost"}
+                      variant={location === '/users' ? "default" : "ghost"}
                       className={cn(
                         "w-full justify-start h-10 px-4",
-                        location === '/settings'
+                        location === '/users'
                           ? "bg-primary text-primary-foreground shadow-sm"
                           : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                       )}
                       onClick={onClose}
                     >
-                      <Settings className="w-5 h-5 mr-3" />
-                      <span>Settings</span>
+                      <Shield className="w-5 h-5 mr-3" />
+                      <span>User Management</span>
                     </Button>
                   </Link>
+                  
+                  {hasModuleAccess('Settings') && (
+                    <Link href="/settings">
+                      <Button
+                        variant={location === '/settings' ? "default" : "ghost"}
+                        className={cn(
+                          "w-full justify-start h-10 px-4",
+                          location === '/settings'
+                            ? "bg-primary text-primary-foreground shadow-sm"
+                            : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                        )}
+                        onClick={onClose}
+                      >
+                        <Settings className="w-5 h-5 mr-3" />
+                        <span>Settings</span>
+                      </Button>
+                    </Link>
+                  )}
                 </>
               )}
             </nav>
