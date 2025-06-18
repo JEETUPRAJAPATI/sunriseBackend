@@ -23,27 +23,42 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     setLoading(true);
 
+    if (!formData.username || !formData.password) {
+      setError('Please enter both username and password');
+      setLoading(false);
+      return;
+    }
+
     try {
+      console.log('Submitting login:', formData);
       const result = await login(formData);
+      console.log('Login result:', result);
       
-      if (result.success) {
+      if (result && result.success) {
         toast({
           title: "Welcome back!",
-          description: "Login successful",
+          description: `Login successful, ${result.user?.fullName || 'User'}!`,
         });
+        navigate('/');
       } else {
+        const errorMsg = result?.message || 'Login failed';
+        setError(errorMsg);
         toast({
-          title: "Login Failed",
-          description: result.error,
+          title: "Login failed",
+          description: errorMsg,
           variant: "destructive",
         });
       }
     } catch (error) {
+      console.error('Login error:', error);
+      const errorMsg = error.message || 'An unexpected error occurred';
+      setError(errorMsg);
       toast({
         title: "Error",
-        description: "An unexpected error occurred",
+        description: errorMsg,
         variant: "destructive",
       });
     } finally {
