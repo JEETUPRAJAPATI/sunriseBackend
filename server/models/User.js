@@ -40,10 +40,10 @@ const userSchema = new mongoose.Schema({
       return this.role !== USER_ROLES.SUPER_USER;
     }
   },
-  permissions: [{
-    module: String,
-    actions: [String]
-  }],
+  permissions: {
+    type: Object,
+    default: {}
+  },
   isActive: {
     type: Boolean,
     default: true

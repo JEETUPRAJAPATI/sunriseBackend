@@ -109,7 +109,7 @@ export const createUser = async (req, res) => {
       fullName,
       role,
       unit: role === USER_ROLES.SUPER_USER ? undefined : unit,
-      permissions: permissions || []
+      permissions: permissions || {}
     };
 
     const user = await User.create(userData);

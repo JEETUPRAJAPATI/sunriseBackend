@@ -474,61 +474,96 @@ export default function UserManagement() {
                 
                 {/* Permissions Section */}
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-base font-semibold">Module Permissions</Label>
+                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <div>
+                      <Label className="text-base font-semibold text-blue-900 dark:text-blue-100">Module Permissions</Label>
+                      <p className="text-sm text-blue-700 dark:text-blue-200 mt-1">Configure access permissions for each module</p>
+                    </div>
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
                       onClick={() => setRoleDefaultPermissions(formData.role)}
+                      className="bg-white dark:bg-gray-800 border-blue-300 dark:border-blue-600 text-blue-700 dark:text-blue-200 hover:bg-blue-50 dark:hover:bg-blue-900/30"
                     >
                       Reset to Role Defaults
                     </Button>
                   </div>
                   
-                  <div className="border rounded-lg">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-32">Module</TableHead>
-                          <TableHead className="text-center w-20">View</TableHead>
-                          <TableHead className="text-center w-20">Add</TableHead>
-                          <TableHead className="text-center w-20">Edit</TableHead>
-                          <TableHead className="text-center w-20">Delete</TableHead>
-                          <TableHead className="text-center w-20">All</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {MODULES.map((module) => {
-                          const modulePerms = formData.permissions[module] || {};
-                          const allEnabled = PERMISSION_TYPES.every(type => modulePerms[type]);
-                          
-                          return (
-                            <TableRow key={module}>
-                              <TableCell className="font-medium">{module}</TableCell>
-                              {PERMISSION_TYPES.map((permType) => (
-                                <TableCell key={permType} className="text-center">
+                  <div className="border rounded-lg overflow-hidden bg-white dark:bg-gray-900">
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-gray-50 dark:bg-gray-800">
+                            <TableHead className="w-32 font-semibold text-gray-900 dark:text-gray-100">Module</TableHead>
+                            <TableHead className="text-center w-20 font-semibold text-gray-900 dark:text-gray-100">
+                              <div className="flex flex-col items-center">
+                                <span>View</span>
+                                <div className="w-4 h-4 mt-1 bg-blue-100 dark:bg-blue-900 rounded-sm"></div>
+                              </div>
+                            </TableHead>
+                            <TableHead className="text-center w-20 font-semibold text-gray-900 dark:text-gray-100">
+                              <div className="flex flex-col items-center">
+                                <span>Add</span>
+                                <div className="w-4 h-4 mt-1 bg-green-100 dark:bg-green-900 rounded-sm"></div>
+                              </div>
+                            </TableHead>
+                            <TableHead className="text-center w-20 font-semibold text-gray-900 dark:text-gray-100">
+                              <div className="flex flex-col items-center">
+                                <span>Edit</span>
+                                <div className="w-4 h-4 mt-1 bg-yellow-100 dark:bg-yellow-900 rounded-sm"></div>
+                              </div>
+                            </TableHead>
+                            <TableHead className="text-center w-20 font-semibold text-gray-900 dark:text-gray-100">
+                              <div className="flex flex-col items-center">
+                                <span>Delete</span>
+                                <div className="w-4 h-4 mt-1 bg-red-100 dark:bg-red-900 rounded-sm"></div>
+                              </div>
+                            </TableHead>
+                            <TableHead className="text-center w-20 font-semibold text-gray-900 dark:text-gray-100">All</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {MODULES.map((module, index) => {
+                            const modulePerms = formData.permissions[module] || {};
+                            const allEnabled = PERMISSION_TYPES.every(type => modulePerms[type]);
+                            
+                            return (
+                              <TableRow key={module} className={index % 2 === 0 ? "bg-gray-50/50 dark:bg-gray-800/50" : "bg-white dark:bg-gray-900"}>
+                                <TableCell className="font-medium text-gray-900 dark:text-gray-100 py-3">{module}</TableCell>
+                                {PERMISSION_TYPES.map((permType) => {
+                                  const colorClass = {
+                                    view: 'accent-blue-600',
+                                    add: 'accent-green-600', 
+                                    edit: 'accent-yellow-600',
+                                    delete: 'accent-red-600'
+                                  }[permType];
+                                  
+                                  return (
+                                    <TableCell key={permType} className="text-center py-3">
+                                      <input
+                                        type="checkbox"
+                                        checked={modulePerms[permType] || false}
+                                        onChange={(e) => updatePermission(module, permType, e.target.checked)}
+                                        className={`h-5 w-5 rounded border-2 border-gray-300 dark:border-gray-600 ${colorClass} focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors`}
+                                      />
+                                    </TableCell>
+                                  );
+                                })}
+                                <TableCell className="text-center py-3">
                                   <input
                                     type="checkbox"
-                                    checked={modulePerms[permType] || false}
-                                    onChange={(e) => updatePermission(module, permType, e.target.checked)}
-                                    className="h-4 w-4 rounded border-gray-300"
+                                    checked={allEnabled}
+                                    onChange={(e) => toggleAllModulePermissions(module, e.target.checked)}
+                                    className="h-5 w-5 rounded border-2 border-gray-300 dark:border-gray-600 accent-purple-600 focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors"
                                   />
                                 </TableCell>
-                              ))}
-                              <TableCell className="text-center">
-                                <input
-                                  type="checkbox"
-                                  checked={allEnabled}
-                                  onChange={(e) => toggleAllModulePermissions(module, e.target.checked)}
-                                  className="h-4 w-4 rounded border-gray-300"
-                                />
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -747,61 +782,96 @@ export default function UserManagement() {
               
               {/* Permissions Section for Edit */}
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label className="text-base font-semibold">Module Permissions</Label>
+                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div>
+                    <Label className="text-base font-semibold text-blue-900 dark:text-blue-100">Module Permissions</Label>
+                    <p className="text-sm text-blue-700 dark:text-blue-200 mt-1">Configure access permissions for each module</p>
+                  </div>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={() => setRoleDefaultPermissions(formData.role)}
+                    className="bg-white dark:bg-gray-800 border-blue-300 dark:border-blue-600 text-blue-700 dark:text-blue-200 hover:bg-blue-50 dark:hover:bg-blue-900/30"
                   >
                     Reset to Role Defaults
                   </Button>
                 </div>
                 
-                <div className="border rounded-lg">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-32">Module</TableHead>
-                        <TableHead className="text-center w-20">View</TableHead>
-                        <TableHead className="text-center w-20">Add</TableHead>
-                        <TableHead className="text-center w-20">Edit</TableHead>
-                        <TableHead className="text-center w-20">Delete</TableHead>
-                        <TableHead className="text-center w-20">All</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {MODULES.map((module) => {
-                        const modulePerms = formData.permissions[module] || {};
-                        const allEnabled = PERMISSION_TYPES.every(type => modulePerms[type]);
-                        
-                        return (
-                          <TableRow key={module}>
-                            <TableCell className="font-medium">{module}</TableCell>
-                            {PERMISSION_TYPES.map((permType) => (
-                              <TableCell key={permType} className="text-center">
+                <div className="border rounded-lg overflow-hidden bg-white dark:bg-gray-900">
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gray-50 dark:bg-gray-800">
+                          <TableHead className="w-32 font-semibold text-gray-900 dark:text-gray-100">Module</TableHead>
+                          <TableHead className="text-center w-20 font-semibold text-gray-900 dark:text-gray-100">
+                            <div className="flex flex-col items-center">
+                              <span>View</span>
+                              <div className="w-4 h-4 mt-1 bg-blue-100 dark:bg-blue-900 rounded-sm"></div>
+                            </div>
+                          </TableHead>
+                          <TableHead className="text-center w-20 font-semibold text-gray-900 dark:text-gray-100">
+                            <div className="flex flex-col items-center">
+                              <span>Add</span>
+                              <div className="w-4 h-4 mt-1 bg-green-100 dark:bg-green-900 rounded-sm"></div>
+                            </div>
+                          </TableHead>
+                          <TableHead className="text-center w-20 font-semibold text-gray-900 dark:text-gray-100">
+                            <div className="flex flex-col items-center">
+                              <span>Edit</span>
+                              <div className="w-4 h-4 mt-1 bg-yellow-100 dark:bg-yellow-900 rounded-sm"></div>
+                            </div>
+                          </TableHead>
+                          <TableHead className="text-center w-20 font-semibold text-gray-900 dark:text-gray-100">
+                            <div className="flex flex-col items-center">
+                              <span>Delete</span>
+                              <div className="w-4 h-4 mt-1 bg-red-100 dark:bg-red-900 rounded-sm"></div>
+                            </div>
+                          </TableHead>
+                          <TableHead className="text-center w-20 font-semibold text-gray-900 dark:text-gray-100">All</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {MODULES.map((module, index) => {
+                          const modulePerms = formData.permissions[module] || {};
+                          const allEnabled = PERMISSION_TYPES.every(type => modulePerms[type]);
+                          
+                          return (
+                            <TableRow key={module} className={index % 2 === 0 ? "bg-gray-50/50 dark:bg-gray-800/50" : "bg-white dark:bg-gray-900"}>
+                              <TableCell className="font-medium text-gray-900 dark:text-gray-100 py-3">{module}</TableCell>
+                              {PERMISSION_TYPES.map((permType) => {
+                                const colorClass = {
+                                  view: 'accent-blue-600',
+                                  add: 'accent-green-600', 
+                                  edit: 'accent-yellow-600',
+                                  delete: 'accent-red-600'
+                                }[permType];
+                                
+                                return (
+                                  <TableCell key={permType} className="text-center py-3">
+                                    <input
+                                      type="checkbox"
+                                      checked={modulePerms[permType] || false}
+                                      onChange={(e) => updatePermission(module, permType, e.target.checked)}
+                                      className={`h-5 w-5 rounded border-2 border-gray-300 dark:border-gray-600 ${colorClass} focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors`}
+                                    />
+                                  </TableCell>
+                                );
+                              })}
+                              <TableCell className="text-center py-3">
                                 <input
                                   type="checkbox"
-                                  checked={modulePerms[permType] || false}
-                                  onChange={(e) => updatePermission(module, permType, e.target.checked)}
-                                  className="h-4 w-4 rounded border-gray-300"
+                                  checked={allEnabled}
+                                  onChange={(e) => toggleAllModulePermissions(module, e.target.checked)}
+                                  className="h-5 w-5 rounded border-2 border-gray-300 dark:border-gray-600 accent-purple-600 focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors"
                                 />
                               </TableCell>
-                            ))}
-                            <TableCell className="text-center">
-                              <input
-                                type="checkbox"
-                                checked={allEnabled}
-                                onChange={(e) => toggleAllModulePermissions(module, e.target.checked)}
-                                className="h-4 w-4 rounded border-gray-300"
-                              />
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>
               </div>
             </div>
