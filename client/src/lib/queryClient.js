@@ -25,6 +25,9 @@ export async function apiRequest(method, url, data) {
 export const getQueryFn = ({ on401 = "throw" }) =>
   async ({ queryKey }) => {
     const res = await fetch(queryKey[0], {
+      headers: {
+        "Accept": "application/json"
+      },
       credentials: "include",
     });
 

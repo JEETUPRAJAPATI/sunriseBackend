@@ -46,7 +46,7 @@ async function registerRoutes(app) {
     next();
   });
 
-  // Auth routes (public) - full API paths
+  // Auth routes (public) - full API paths  
   app.post('/api/auth/login', authController.login);
   app.post('/api/auth/logout', authController.logout);
   app.get('/api/auth/me', authenticateToken, authController.getCurrentUser);
