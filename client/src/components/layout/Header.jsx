@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
 import {
   DropdownMenu,
@@ -22,7 +21,6 @@ import {
 } from 'lucide-react';
 
 export default function Header({ onSidebarToggle, title = "Dashboard" }) {
-  const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
   const [notifications] = useState(3); // This would come from API
 
