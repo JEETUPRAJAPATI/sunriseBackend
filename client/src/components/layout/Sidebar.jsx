@@ -151,7 +151,7 @@ export default function Sidebar({ isOpen, onClose }) {
                   </Badge>
                 </div>
               </div>
-              <div className="md:hidden">
+              <div className="hidden md:block">
                 <ThemeToggle />
               </div>
             </div>
