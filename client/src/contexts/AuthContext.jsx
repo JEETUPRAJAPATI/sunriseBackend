@@ -52,6 +52,7 @@ export const AuthProvider = ({ children }) => {
       
       if (response.success && response.user) {
         setUser(response.user);
+        setIsAuthenticated(true);
         return response;
       } else {
         throw new Error(response.message || 'Login failed');
@@ -92,6 +93,7 @@ export const AuthProvider = ({ children }) => {
     user,
     loading,
     error,
+    isAuthenticated,
     login,
     logout,
     checkAuth
