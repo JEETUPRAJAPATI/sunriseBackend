@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -110,22 +111,24 @@ export default function Sidebar({ isOpen, onClose }) {
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 bg-sidebar shadow-lg transition-transform duration-300 ease-in-out md:translate-x-0",
+        "fixed inset-y-0 left-0 z-50 w-64 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm shadow-xl border-r border-slate-200 dark:border-slate-700 transition-transform duration-300 ease-in-out md:translate-x-0",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="flex flex-col h-full">
           {/* Logo and Company Name */}
-          <div className="flex items-center justify-between h-16 px-6 border-b border-sidebar-border">
+          <div className="flex items-center justify-between h-16 px-6 border-b border-slate-200 dark:border-slate-700">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <Factory className="w-5 h-5 text-primary-foreground" />
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                <Factory className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-semibold text-sidebar-foreground">ManuERP</span>
+              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                ManuERP
+              </span>
             </div>
             <Button
               variant="ghost"
               size="sm"
-              className="md:hidden text-sidebar-foreground hover:bg-sidebar-accent"
+              className="md:hidden text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
               onClick={onClose}
             >
               ×
@@ -133,18 +136,23 @@ export default function Sidebar({ isOpen, onClose }) {
           </div>
 
           {/* User Info */}
-          <div className="px-6 py-4 border-b border-sidebar-border">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-sidebar-accent rounded-full flex items-center justify-center">
-                <Users className="w-5 h-5 text-sidebar-accent-foreground" />
+          <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
+                  <Users className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
+                    {user?.fullName || user?.username}
+                  </p>
+                  <Badge variant="secondary" className="text-xs bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                    {user?.role}
+                  </Badge>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-sidebar-foreground truncate">
-                  {user?.fullName}
-                </p>
-                <Badge variant="secondary" className="text-xs">
-                  {user?.role}
-                </Badge>
+              <div className="md:hidden">
+                <ThemeToggle />
               </div>
             </div>
           </div>
@@ -162,10 +170,10 @@ export default function Sidebar({ isOpen, onClose }) {
                     <Button
                       variant={isActive ? "default" : "ghost"}
                       className={cn(
-                        "w-full justify-start h-10 px-4",
+                        "w-full justify-start h-10 px-4 transition-all duration-200",
                         isActive
-                          ? "bg-primary text-primary-foreground shadow-sm"
-                          : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                          ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg hover:shadow-xl"
+                          : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100"
                       )}
                       onClick={onClose}
                     >
@@ -219,10 +227,10 @@ export default function Sidebar({ isOpen, onClose }) {
           </ScrollArea>
 
           {/* Logout */}
-          <div className="p-4 border-t border-sidebar-border">
+          <div className="p-4 border-t border-slate-200 dark:border-slate-700">
             <Button
               variant="ghost"
-              className="w-full justify-start text-sidebar-foreground hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+              className="w-full justify-start text-slate-700 dark:text-slate-300 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400 transition-colors duration-200"
               onClick={handleLogout}
             >
               <LogOut className="w-5 h-5 mr-3" />
