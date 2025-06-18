@@ -51,29 +51,17 @@ app.use((req, res, next) => {
     // Create HTTP server first
     const server = createServer(app);
 
-    // Create a completely separate middleware stack for API routes
-    app.use('/api', (req, res, next) => {
-      log(`API Route Hit: ${req.method} ${req.originalUrl}`);
-      
-      // Force JSON response headers
-      res.setHeader('Content-Type', 'application/json');
-      res.setHeader('Cache-Control', 'no-cache');
-      
-      // Skip to API handlers, bypass Vite completely
-      next();
-    });
-
-    // Register API routes directly
+    // STEP 1: Register API routes FIRST with highest priority
     await registerRoutes(app);
     log("API routes registered successfully");
 
-    // Add catch-all for unmatched API routes BEFORE Vite
-    app.use('/api/*', (req, res) => {
-      log(`Unmatched API route: ${req.method} ${req.originalUrl}`);
+    // STEP 2: Add API-specific middleware for better handling
+    app.use('/api/*', (req, res, next) => {
+      log(`API catch-all hit: ${req.method} ${req.originalUrl}`);
       res.status(404).json({ error: 'API endpoint not found' });
     });
 
-    // Setup Vite/static serving AFTER API routes
+    // STEP 3: Setup Vite/static serving (will skip API routes)
     if (process.env.NODE_ENV === "production") {
       serveStatic(app);
     } else {

@@ -29,6 +29,17 @@ async function registerRoutes(app) {
   app.use(express.urlencoded({ extended: false }));
   app.use(cookieParser());
 
+  // Add test route at the very beginning - BEFORE all other routes
+  app.get('/api/test', (req, res) => {
+    console.log('=== TEST ROUTE HANDLER EXECUTED ===');
+    res.setHeader('Content-Type', 'application/json');
+    res.status(200).json({ 
+      message: 'API is working', 
+      timestamp: new Date().toISOString(),
+      success: true 
+    });
+  });
+
   // Minimal logging - headers already set in main app
   app.use((req, res, next) => {
     console.log(`Route Handler: ${req.method} ${req.originalUrl}`);
@@ -149,11 +160,6 @@ async function registerRoutes(app) {
   app.put('/api/settings/notifications', authorizeRoles(USER_ROLES.SUPER_USER), settingsController.updateNotificationSettings);
   app.put('/api/settings/backup', authorizeRoles(USER_ROLES.SUPER_USER), settingsController.updateBackupSettings);
   app.put('/api/settings/theme', authorizeRoles(USER_ROLES.SUPER_USER), settingsController.updateThemeSettings);
-
-  // Add a test route to verify API routing works
-  app.get('/api/test', (req, res) => {
-    res.json({ message: 'API is working', timestamp: new Date().toISOString() });
-  });
 
   // Return the app
   return app;
