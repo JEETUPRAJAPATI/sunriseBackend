@@ -1,18 +1,10 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { setupVite, serveStatic, log } from "./vite";
 
-// Use dynamic imports for CommonJS modules
-async function loadModules() {
-  const routesModule = await import("./routes.js");
-  const dbModule = await import("./config/database.js");
-  const seedModule = await import("./seed/seedUsers.js");
-  
-  return {
-    registerRoutes: routesModule.registerRoutes || routesModule.default.registerRoutes,
-    connectDB: dbModule.default || dbModule.connectDB,
-    createSeedUsers: seedModule.default || seedModule.createSeedUsers
-  };
-}
+// Import ES modules
+import { registerRoutes } from "./routes.js";
+import connectDB from "./config/database.js";
+import createSeedUsers from "./seed/seedUsers.js";
 
 const app = express();
 app.use(express.json());
@@ -50,8 +42,6 @@ app.use((req, res, next) => {
 
 (async () => {
   try {
-    const { registerRoutes, connectDB, createSeedUsers } = await loadModules();
-    
     // Connect to MongoDB
     await connectDB();
     

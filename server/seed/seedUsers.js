@@ -6,8 +6,7 @@ const seedUsers = [
     username: 'admin',
     email: 'admin@company.com',
     password: 'admin123',
-    firstName: 'Admin',
-    lastName: 'User',
+    fullName: 'Admin User',
     role: 'Super User',
     unit: 'Unit A - Assembly',
     isActive: true
@@ -16,8 +15,7 @@ const seedUsers = [
     username: 'unithead',
     email: 'unithead@company.com',
     password: 'unit123',
-    firstName: 'Unit',
-    lastName: 'Head',
+    fullName: 'Unit Head',
     role: 'Unit Head',
     unit: 'Unit A - Assembly',
     isActive: true
@@ -26,8 +24,7 @@ const seedUsers = [
     username: 'production',
     email: 'production@company.com',
     password: 'prod123',
-    firstName: 'Production',
-    lastName: 'Manager',
+    fullName: 'Production Manager',
     role: 'Production',
     unit: 'Unit A - Assembly',
     isActive: true
@@ -36,8 +33,7 @@ const seedUsers = [
     username: 'packing',
     email: 'packing@company.com',
     password: 'pack123',
-    firstName: 'Packing',
-    lastName: 'Manager',
+    fullName: 'Packing Manager',
     role: 'Packing',
     unit: 'Unit B - Packaging',
     isActive: true
@@ -46,8 +42,7 @@ const seedUsers = [
     username: 'dispatch',
     email: 'dispatch@company.com',
     password: 'disp123',
-    firstName: 'Dispatch',
-    lastName: 'Manager',
+    fullName: 'Dispatch Manager',
     role: 'Dispatch',
     unit: 'Unit D - Dispatch',
     isActive: true
@@ -56,8 +51,7 @@ const seedUsers = [
     username: 'accounts',
     email: 'accounts@company.com',
     password: 'acc123',
-    firstName: 'Accounts',
-    lastName: 'Manager',
+    fullName: 'Accounts Manager',
     role: 'Accounts',
     unit: 'Unit A - Assembly',
     isActive: true

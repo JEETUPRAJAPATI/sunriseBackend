@@ -1,27 +1,27 @@
-const express = require('express');
-const { createServer } = require('http');
-const cookieParser = require('cookie-parser');
-const corsMiddleware = require('./middleware/cors.js');
+import express from 'express';
+import { createServer } from 'http';
+import cookieParser from 'cookie-parser';
+import corsMiddleware from './middleware/cors.js';
 
 // Import middleware
-const { authenticateToken, authorizeRoles, checkUnitAccess } = require('./middleware/auth.js');
+import { authenticateToken, authorizeRoles, checkUnitAccess } from './middleware/auth.js';
 
 // Import controllers
-const authController = require('./controllers/authController.js');
-const userController = require('./controllers/userController.js');
-const dashboardController = require('./controllers/dashboardController.js');
-const orderController = require('./controllers/orderController.js');
-const manufacturingController = require('./controllers/manufacturingController.js');
-const dispatchController = require('./controllers/dispatchController.js');
-const salesController = require('./controllers/salesController.js');
-const accountController = require('./controllers/accountController.js');
-const inventoryController = require('./controllers/inventoryController.js');
-const customerController = require('./controllers/customerController.js');
-const supplierController = require('./controllers/supplierController.js');
-const purchaseController = require('./controllers/purchaseController.js');
-const settingsController = require('./controllers/settingsController.js');
+import * as authController from './controllers/authController.js';
+import * as userController from './controllers/userController.js';
+import * as dashboardController from './controllers/dashboardController.js';
+import * as orderController from './controllers/orderController.js';
+import * as manufacturingController from './controllers/manufacturingController.js';
+import * as dispatchController from './controllers/dispatchController.js';
+import * as salesController from './controllers/salesController.js';
+import * as accountController from './controllers/accountController.js';
+import * as inventoryController from './controllers/inventoryController.js';
+import * as customerController from './controllers/customerController.js';
+import * as supplierController from './controllers/supplierController.js';
+import * as purchaseController from './controllers/purchaseController.js';
+import * as settingsController from './controllers/settingsController.js';
 
-const { USER_ROLES } = require('../shared/schema.js');
+import { USER_ROLES } from '../shared/schema.js';
 
 async function registerRoutes(app) {
   // CORS and parsing middleware
@@ -31,6 +31,7 @@ async function registerRoutes(app) {
   // Auth routes (public)
   app.post('/api/auth/login', authController.login);
   app.post('/api/auth/logout', authController.logout);
+  app.get('/api/auth/me', authenticateToken, authController.getCurrentUser);
 
   // Protected routes middleware
   app.use('/api', authenticateToken);
@@ -150,6 +151,4 @@ async function registerRoutes(app) {
   return httpServer;
 }
 
-module.exports = { registerRoutes };
-module.exports.default = { registerRoutes };
-exports.registerRoutes = registerRoutes;
+export { registerRoutes };
