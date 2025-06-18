@@ -51,12 +51,15 @@ app.use((req, res, next) => {
     // Create HTTP server first
     const server = createServer(app);
 
-    // Create separate API handling before Vite middleware
+    // Create separate API handling with explicit middleware bypass
     const apiApp = express();
     await registerRoutes(apiApp);
     
-    // Mount API routes with highest priority
-    app.use('/api', apiApp);
+    // Priority: Mount API routes BEFORE any other middleware
+    app.use('/api', (req, res, next) => {
+      log(`API intercepted: ${req.method} ${req.path}`);
+      next();
+    }, apiApp);
     log("API routes registered successfully");
 
     // Setup Vite/static serving for everything else

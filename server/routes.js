@@ -29,8 +29,8 @@ async function registerRoutes(app) {
   app.use(express.urlencoded({ extended: false }));
   app.use(cookieParser());
 
-  // API-specific middleware that runs before Vite
-  app.use('/api', (req, res, next) => {
+  // Debug logging for this API instance
+  app.use((req, res, next) => {
     console.log(`API Request: ${req.method} ${req.originalUrl}`);
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Cache-Control', 'no-cache');

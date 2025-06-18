@@ -5,7 +5,12 @@ import bcrypt from 'bcryptjs';
 
 const login = async (req, res) => {
   try {
-    console.log('Login controller called with body:', req.body);
+    console.log('=== LOGIN CONTROLLER START ===');
+    console.log('Headers:', req.headers);
+    console.log('Body:', req.body);
+    console.log('Method:', req.method);
+    console.log('URL:', req.url);
+    
     const { username, password } = req.body;
 
     if (!username || !password) {
@@ -57,13 +62,15 @@ const login = async (req, res) => {
       }
     };
 
-    console.log('Login successful, sending response');
-    res.json({
+    console.log('=== SENDING LOGIN RESPONSE ===');
+    const response = {
       message: 'Login successful',
       success: true,
       user: userResponse,
       token
-    });
+    };
+    console.log('Response data:', response);
+    res.json(response);
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ message: 'Internal server error' });
