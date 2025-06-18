@@ -684,6 +684,96 @@ export default function UserManagement() {
           </Card>
         </div>
 
+        {/* Search and Filters */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>Search and Filter</span>
+              <Button variant="outline" size="sm" onClick={clearFilters}>
+                Clear Filters
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <Label htmlFor="search" className="text-sm font-medium mb-2 block">
+                  Search
+                </Label>
+                <Input
+                  id="search"
+                  placeholder="Name, username, or email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+              <div>
+                <Label htmlFor="role-filter" className="text-sm font-medium mb-2 block">
+                  Role
+                </Label>
+                <Select value={selectedRole} onValueChange={setSelectedRole}>
+                  <SelectTrigger id="role-filter">
+                    <SelectValue placeholder="All Roles" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">All Roles</SelectItem>
+                    {uniqueRoles.map(role => (
+                      <SelectItem key={role} value={role}>{role}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="unit-filter" className="text-sm font-medium mb-2 block">
+                  Unit
+                </Label>
+                <Select value={selectedUnit} onValueChange={setSelectedUnit}>
+                  <SelectTrigger id="unit-filter">
+                    <SelectValue placeholder="All Units" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">All Units</SelectItem>
+                    {uniqueUnits.map(unit => (
+                      <SelectItem key={unit} value={unit}>{unit}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="status-filter" className="text-sm font-medium mb-2 block">
+                  Status
+                </Label>
+                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                  <SelectTrigger id="status-filter">
+                    <SelectValue placeholder="All Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">All Status</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            {/* Filter Summary */}
+            {(searchTerm || selectedRole || selectedUnit || selectedStatus) && (
+              <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-blue-700 dark:text-blue-300">
+                    Showing {filteredUsers.length} of {users.length} users
+                    {searchTerm && ` matching "${searchTerm}"`}
+                    {selectedRole && ` in role "${selectedRole}"`}
+                    {selectedUnit && ` in unit "${selectedUnit}"`}
+                    {selectedStatus && ` with status "${selectedStatus}"`}
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Users Table */}
         <Card>
           <CardHeader>
