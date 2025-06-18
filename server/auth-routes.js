@@ -3,6 +3,14 @@ import cookieParser from 'cookie-parser';
 import User from './models/User.js';
 import { generateToken, authenticateToken } from './middleware/auth.js';
 import { getUserModules } from './utils/permissions.js';
+import { 
+  getUsers, 
+  getUserById, 
+  createUser, 
+  updateUser, 
+  deleteUser, 
+  resetUserPassword 
+} from './controllers/userController.js';
 import bcrypt from 'bcryptjs';
 
 const router = express.Router();
