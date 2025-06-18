@@ -87,9 +87,9 @@ export default function UserManagement() {
   
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedRole, setSelectedRole] = useState('');
-  const [selectedUnit, setSelectedUnit] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('');
+  const [selectedRole, setSelectedRole] = useState('all');
+  const [selectedUnit, setSelectedUnit] = useState('all');
+  const [selectedStatus, setSelectedStatus] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   
@@ -212,9 +212,9 @@ export default function UserManagement() {
     const matchesSearch = user.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = selectedRole === '' || user.role === selectedRole;
-    const matchesUnit = selectedUnit === '' || user.unit === selectedUnit;
-    const matchesStatus = selectedStatus === '' || 
+    const matchesRole = selectedRole === '' || selectedRole === 'all' || user.role === selectedRole;
+    const matchesUnit = selectedUnit === '' || selectedUnit === 'all' || user.unit === selectedUnit;
+    const matchesStatus = selectedStatus === '' || selectedStatus === 'all' || 
                          (selectedStatus === 'active' && user.isActive) ||
                          (selectedStatus === 'inactive' && !user.isActive);
     return matchesSearch && matchesRole && matchesUnit && matchesStatus;
@@ -231,9 +231,9 @@ export default function UserManagement() {
 
   const clearFilters = () => {
     setSearchTerm('');
-    setSelectedRole('');
-    setSelectedUnit('');
-    setSelectedStatus('');
+    setSelectedRole('all');
+    setSelectedUnit('all');
+    setSelectedStatus('all');
     setCurrentPage(1);
   };
 
@@ -717,7 +717,7 @@ export default function UserManagement() {
                     <SelectValue placeholder="All Roles" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Roles</SelectItem>
+                    <SelectItem value="all">All Roles</SelectItem>
                     {uniqueRoles.map(role => (
                       <SelectItem key={role} value={role}>{role}</SelectItem>
                     ))}
@@ -733,7 +733,7 @@ export default function UserManagement() {
                     <SelectValue placeholder="All Units" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Units</SelectItem>
+                    <SelectItem value="all">All Units</SelectItem>
                     {uniqueUnits.map(unit => (
                       <SelectItem key={unit} value={unit}>{unit}</SelectItem>
                     ))}
@@ -749,7 +749,7 @@ export default function UserManagement() {
                     <SelectValue placeholder="All Status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Status</SelectItem>
+                    <SelectItem value="all">All Status</SelectItem>
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="inactive">Inactive</SelectItem>
                   </SelectContent>
