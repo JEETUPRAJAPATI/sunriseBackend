@@ -23,32 +23,30 @@ import * as settingsController from './controllers/settingsController.js';
 import { USER_ROLES } from '../shared/schema.js';
 
 async function registerRoutes(app) {
-  // Create API router to handle all API routes separately
-  const apiRouter = express.Router();
-  
-  // CORS and parsing middleware for API routes
-  apiRouter.use(corsMiddleware);
-  apiRouter.use(express.json());
-  apiRouter.use(express.urlencoded({ extended: false }));
-  apiRouter.use(cookieParser());
+  // Apply global middleware
+  app.use(corsMiddleware);
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: false }));
+  app.use(cookieParser());
 
-  // Debug middleware for API requests
-  apiRouter.use((req, res, next) => {
+  // API-specific middleware that runs before Vite
+  app.use('/api', (req, res, next) => {
     console.log(`API Request: ${req.method} ${req.originalUrl}`);
     res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Cache-Control', 'no-cache');
     next();
   });
 
   // Auth routes (public)
-  apiRouter.post('/auth/login', authController.login);
-  apiRouter.post('/auth/logout', authController.logout);
-  apiRouter.get('/auth/me', authenticateToken, authController.getCurrentUser);
+  app.post('/api/auth/login', authController.login);
+  app.post('/api/auth/logout', authController.logout);
+  app.get('/api/auth/me', authenticateToken, authController.getCurrentUser);
 
   // Protected routes
-  apiRouter.post('/auth/change-password', authenticateToken, authController.changePassword);
+  app.post('/api/auth/change-password', authenticateToken, authController.changePassword);
 
   // User management routes
-  apiRouter.get('/users', authenticateToken, authorizeRoles(USER_ROLES.SUPER_USER, USER_ROLES.UNIT_HEAD), userController.getUsers);
+  app.get('/api/users', authenticateToken, authorizeRoles(USER_ROLES.SUPER_USER, USER_ROLES.UNIT_HEAD), userController.getUsers);
   app.get('/api/users/:id', authenticateToken, authorizeRoles(USER_ROLES.SUPER_USER, USER_ROLES.UNIT_HEAD), userController.getUserById);
   app.post('/api/users', authenticateToken, authorizeRoles(USER_ROLES.SUPER_USER, USER_ROLES.UNIT_HEAD), userController.createUser);
   app.put('/api/users/:id', authenticateToken, authorizeRoles(USER_ROLES.SUPER_USER, USER_ROLES.UNIT_HEAD), userController.updateUser);
@@ -155,12 +153,9 @@ async function registerRoutes(app) {
   app.put('/api/settings/theme', authorizeRoles(USER_ROLES.SUPER_USER), settingsController.updateThemeSettings);
 
   // Add a test route to verify API routing works
-  apiRouter.get('/test', (req, res) => {
+  app.get('/api/test', (req, res) => {
     res.json({ message: 'API is working', timestamp: new Date().toISOString() });
   });
-
-  // Mount the API router before any other middleware
-  app.use('/api', apiRouter);
 
   // Return the app
   return app;
