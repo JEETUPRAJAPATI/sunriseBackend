@@ -1,9 +1,9 @@
-import jwt from 'jsonwebtoken';
-import User from '../models/User.js';
+const jwt = require('jsonwebtoken');
+const User = require('../models/User.js');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
 
-export const authenticateToken = async (req, res, next) => {
+const authenticateToken = async (req, res, next) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '') || req.cookies?.token;
 
@@ -25,7 +25,7 @@ export const authenticateToken = async (req, res, next) => {
   }
 };
 
-export const authorizeRoles = (...roles) => {
+const authorizeRoles = (...roles) => {
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({ message: 'User not authenticated.' });
@@ -39,7 +39,7 @@ export const authorizeRoles = (...roles) => {
   };
 };
 
-export const checkUnitAccess = (req, res, next) => {
+const checkUnitAccess = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({ message: 'User not authenticated.' });
   }
@@ -59,6 +59,13 @@ export const checkUnitAccess = (req, res, next) => {
   next();
 };
 
-export const generateToken = (userId) => {
+const generateToken = (userId) => {
   return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '24h' });
+};
+
+module.exports = {
+  authenticateToken,
+  authorizeRoles,
+  checkUnitAccess,
+  generateToken
 };

@@ -1,6 +1,7 @@
-import User from '../models/User.js';
-import { generateToken } from '../middleware/auth.js';
-import { getUserModules } from '../utils/permissions.js';
+const User = require('../models/User.js');
+const { generateToken } = require('../middleware/auth.js');
+const { getUserModules } = require('../utils/permissions.js');
+const bcrypt = require('bcryptjs');
 
 const login = async (req, res) => {
   try {
@@ -116,4 +117,11 @@ const changePassword = async (req, res) => {
     console.error('Change password error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
+};
+
+module.exports = {
+  login,
+  logout,
+  getCurrentUser,
+  changePassword
 };

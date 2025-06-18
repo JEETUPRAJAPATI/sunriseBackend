@@ -57,19 +57,19 @@ const rolePermissions = {
   }
 };
 
-export const hasPermission = (userRole, module, permission) => {
+const hasPermission = (userRole, module, permission) => {
   const modulePermissions = rolePermissions[userRole]?.[module];
   return modulePermissions?.includes(permission) || false;
 };
 
-export const getUserModules = (userRole) => {
+const getUserModules = (userRole) => {
   return Object.keys(rolePermissions[userRole] || {});
 };
 
-export const getModulePermissions = (userRole, module) => {
+const getModulePermissions = (userRole, module) => {
   return rolePermissions[userRole]?.[module] || [];
 };
 
-export const checkModuleAccess = (userRole, module) => {
+const checkModuleAccess = (userRole, module) => {
   return rolePermissions[userRole]?.[module]?.length > 0 || false;
 };
