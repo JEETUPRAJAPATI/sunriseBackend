@@ -5,11 +5,8 @@ import bcrypt from 'bcryptjs';
 
 const login = async (req, res) => {
   try {
-    console.log('=== LOGIN CONTROLLER START ===');
-    console.log('Headers:', req.headers);
-    console.log('Body:', req.body);
-    console.log('Method:', req.method);
-    console.log('URL:', req.url);
+    console.log('=== LOGIN CONTROLLER EXECUTING ===');
+    console.log('Request body:', req.body);
     
     const { username, password } = req.body;
 
@@ -62,15 +59,17 @@ const login = async (req, res) => {
       }
     };
 
-    console.log('=== SENDING LOGIN RESPONSE ===');
     const response = {
       message: 'Login successful',
       success: true,
       user: userResponse,
       token
     };
-    console.log('Response data:', response);
-    res.json(response);
+    
+    console.log('=== LOGIN SUCCESS - SENDING RESPONSE ===');
+    console.log('User:', userResponse.username, 'Role:', userResponse.role);
+    
+    res.status(200).json(response);
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ message: 'Internal server error' });

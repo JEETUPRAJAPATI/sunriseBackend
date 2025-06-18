@@ -29,38 +29,46 @@ async function registerRoutes(app) {
   app.use(express.urlencoded({ extended: false }));
   app.use(cookieParser());
 
-  // PRIORITY: Test route first to verify route registration
+  // === AUTHENTICATION ROUTES ===
+  
+  // Test route for API verification
   app.get('/api/test', (req, res) => {
     console.log('=== TEST ROUTE EXECUTED ===');
     res.json({ message: 'API working', success: true, timestamp: new Date().toISOString() });
   });
 
-  // Auth routes - CRITICAL: These must be registered BEFORE any catch-all
-  app.post('/api/auth/login', (req, res, next) => {
-    console.log('=== LOGIN ROUTE HIT ===');
-    authController.login(req, res, next);
+  // Public auth routes
+  app.post('/api/auth/login', (req, res) => {
+    console.log('=== LOGIN ROUTE CALLED ===');
+    console.log('Request body:', req.body);
+    authController.login(req, res);
   });
 
-  app.get('/api/auth/me', (req, res, next) => {
-    console.log('=== AUTH/ME ROUTE HIT ===');
-    authenticateToken(req, res, (err) => {
-      if (err) return next(err);
-      authController.getCurrentUser(req, res, next);
-    });
+  app.post('/api/auth/logout', (req, res) => {
+    console.log('=== LOGOUT ROUTE CALLED ===');
+    authController.logout(req, res);
   });
 
-  app.post('/api/auth/logout', authController.logout);
+  // Protected auth routes
+  app.get('/api/auth/me', authenticateToken, (req, res) => {
+    console.log('=== AUTH/ME ROUTE CALLED ===');
+    authController.getCurrentUser(req, res);
+  });
 
-  // Logging middleware
-  app.use((req, res, next) => {
-    console.log(`Route Handler: ${req.method} ${req.originalUrl}`);
+  app.post('/api/auth/change-password', authenticateToken, (req, res) => {
+    console.log('=== CHANGE PASSWORD ROUTE CALLED ===');
+    authController.changePassword(req, res);
+  });
+
+  console.log('Authentication routes registered');
+
+  // Debugging middleware
+  app.use('/api', (req, res, next) => {
+    console.log(`API Request: ${req.method} ${req.originalUrl}`);
     next();
   });
 
-  // Protected routes
-  app.post('/api/auth/change-password', authenticateToken, authController.changePassword);
-
-  // User management routes  
+  // === USER MANAGEMENT ROUTES ===
   app.get('/api/users', authenticateToken, authorizeRoles(USER_ROLES.SUPER_USER, USER_ROLES.UNIT_HEAD), userController.getUsers);
   app.get('/api/users/:id', authenticateToken, authorizeRoles(USER_ROLES.SUPER_USER, USER_ROLES.UNIT_HEAD), userController.getUserById);
   app.post('/api/users', authenticateToken, authorizeRoles(USER_ROLES.SUPER_USER, USER_ROLES.UNIT_HEAD), userController.createUser);
@@ -167,6 +175,8 @@ async function registerRoutes(app) {
   app.put('/api/settings/backup', authorizeRoles(USER_ROLES.SUPER_USER), settingsController.updateBackupSettings);
   app.put('/api/settings/theme', authorizeRoles(USER_ROLES.SUPER_USER), settingsController.updateThemeSettings);
 
+  console.log('=== ALL ROUTES REGISTERED SUCCESSFULLY ===');
+  
   // Return the app
   return app;
 }
