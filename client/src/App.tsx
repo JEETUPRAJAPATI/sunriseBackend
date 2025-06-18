@@ -44,12 +44,14 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <AuthProvider>
-          <Router />
-          <Toaster />
-        </AuthProvider>
-      </TooltipProvider>
+      <ThemeProvider>
+        <TooltipProvider>
+          <AuthProvider>
+            <Router />
+            <Toaster />
+          </AuthProvider>
+        </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
