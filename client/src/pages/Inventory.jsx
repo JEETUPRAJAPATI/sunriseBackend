@@ -1,248 +1,581 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { api } from '../services/api';
+import { useAuth } from '../hooks/useAuth';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useToast } from '@/hooks/use-toast';
-import { api } from '@/services/api';
-import { Plus, Search, Edit, Trash2, Eye, Package, AlertTriangle } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Plus,
+  Search,
+  Filter,
+  Edit,
+  Trash2,
+  AlertTriangle,
+  Package,
+  TrendingUp,
+  DollarSign,
+  BarChart3,
+  Settings,
+  Eye,
+  X
+} from 'lucide-react';
+
+const ITEM_TYPES = ['Product', 'Material', 'Spares', 'Assemblies'];
+const IMPORTANCE_LEVELS = ['Low', 'Normal', 'High', 'Critical'];
+const UNITS = ['pieces', 'kg', 'liters', 'meters', 'sheets', 'boxes', 'units'];
 
 export default function Inventory() {
-  const { toast } = useToast();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState('');
-  const [category, setCategory] = useState('');
-  const [lowStock, setLowStock] = useState(false);
+  
+  // State for filters and search
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedType, setSelectedType] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedSubCategory, setSelectedSubCategory] = useState('all');
+  const [showLowStock, setShowLowStock] = useState(false);
+  const [sortBy, setSortBy] = useState('name');
+  const [sortOrder, setSortOrder] = useState('asc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(20);
+  
+  // Modal states
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [isCustomerCategoryModalOpen, setIsCustomerCategoryModalOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [activeTab, setActiveTab] = useState('items');
+  
+  // Form data
+  const [formData, setFormData] = useState({
+    name: '',
+    code: '',
+    category: '',
+    subCategory: '',
+    batch: '',
+    qty: 0,
+    unit: 'pieces',
+    store: '',
+    importance: 'Normal',
+    type: 'Product',
+    stdCost: 0,
+    purchaseCost: 0,
+    salePrice: 0,
+    hsn: '',
+    gst: 0,
+    mrp: 0,
+    internalManufacturing: false,
+    purchase: true,
+    description: '',
+    internalNotes: '',
+    minStock: 0,
+    leadTime: 0,
+    tags: '',
+    customerPrices: []
+  });
 
-  const { data: inventoryData, isLoading } = useQuery({
-    queryKey: [`/api/inventory?page=${page}&limit=10&search=${search}&category=${category}&lowStock=${lowStock}`],
-    enabled: true
+  // Check permissions
+  const canView = user?.permissions?.Inventory?.view || user?.role === 'Super User';
+  const canAdd = user?.permissions?.Inventory?.add || user?.role === 'Super User';
+  const canEdit = user?.permissions?.Inventory?.edit || user?.role === 'Super User';
+  const canDelete = user?.permissions?.Inventory?.delete || user?.role === 'Super User';
+
+  // Fetch data
+  const { data: itemsData, isLoading: itemsLoading, error: itemsError } = useQuery({
+    queryKey: ['/api/items', { 
+      search: searchTerm, 
+      type: selectedType === 'all' ? '' : selectedType,
+      category: selectedCategory === 'all' ? '' : selectedCategory,
+      subCategory: selectedSubCategory === 'all' ? '' : selectedSubCategory,
+      lowStock: showLowStock,
+      sortBy,
+      sortOrder,
+      page: currentPage,
+      limit: itemsPerPage
+    }],
+    enabled: canView,
+    retry: false
+  });
+
+  const { data: categoriesData } = useQuery({
+    queryKey: ['/api/categories'],
+    enabled: canView,
+    retry: false
+  });
+
+  const { data: customerCategoriesData } = useQuery({
+    queryKey: ['/api/customer-categories'],
+    enabled: canView,
+    retry: false
+  });
+
+  const { data: statsData } = useQuery({
+    queryKey: ['/api/inventory/stats'],
+    enabled: canView,
+    retry: false
+  });
+
+  const items = itemsData?.items || [];
+  const pagination = itemsData?.pagination || {};
+  const stats = statsData?.overview || {};
+  const typeStats = statsData?.typeStats || [];
+  const categories = categoriesData?.categories || [];
+  const customerCategories = customerCategoriesData?.customerCategories || [];
+
+  // Mutations
+  const createItemMutation = useMutation({
+    mutationFn: async (itemData) => {
+      const response = await api.post('/api/items', itemData);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/items'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/inventory/stats'] });
+      setIsAddModalOpen(false);
+      resetForm();
+    }
+  });
+
+  const updateItemMutation = useMutation({
+    mutationFn: async ({ id, data }) => {
+      const response = await api.put(`/api/items/${id}`, data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/items'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/inventory/stats'] });
+      setIsEditModalOpen(false);
+      setSelectedItem(null);
+      resetForm();
+    }
   });
 
   const deleteItemMutation = useMutation({
-    mutationFn: (itemId) => api.delete(`/inventory/${itemId}`),
+    mutationFn: async (id) => {
+      const response = await api.delete(`/api/items/${id}`);
+      return response.data;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/inventory'] });
-      toast({
-        title: "Success",
-        description: "Inventory item deleted successfully",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.response?.data?.message || "Failed to delete inventory item",
-        variant: "destructive",
-      });
-    },
+      queryClient.invalidateQueries({ queryKey: ['/api/items'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/inventory/stats'] });
+    }
   });
 
-  const getCategoryColor = (category) => {
-    switch (category) {
-      case 'Raw Material':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400';
-      case 'Work in Progress':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400';
-      case 'Finished Goods':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
-      case 'Consumables':
-        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400';
-      case 'Tools':
-        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400';
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400';
+  // Helper functions
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      code: '',
+      category: '',
+      subCategory: '',
+      batch: '',
+      qty: 0,
+      unit: 'pieces',
+      store: '',
+      importance: 'Normal',
+      type: 'Product',
+      stdCost: 0,
+      purchaseCost: 0,
+      salePrice: 0,
+      hsn: '',
+      gst: 0,
+      mrp: 0,
+      internalManufacturing: false,
+      purchase: true,
+      description: '',
+      internalNotes: '',
+      minStock: 0,
+      leadTime: 0,
+      tags: '',
+      customerPrices: []
+    });
+  };
+
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleEdit = (item) => {
+    setSelectedItem(item);
+    setFormData({
+      ...item,
+      tags: item.tags?.join(', ') || '',
+      customerPrices: item.customerPrices || []
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Are you sure you want to delete this item?')) {
+      deleteItemMutation.mutate(id);
     }
   };
 
-  const isLowStock = (item) => {
-    return item.currentStock <= item.minStockLevel;
-  };
+  const handleSubmit = () => {
+    const submitData = {
+      ...formData,
+      tags: formData.tags ? formData.tags.split(',').map(tag => tag.trim()) : [],
+      qty: Number(formData.qty),
+      stdCost: Number(formData.stdCost),
+      purchaseCost: Number(formData.purchaseCost),
+      salePrice: Number(formData.salePrice),
+      gst: Number(formData.gst),
+      mrp: Number(formData.mrp),
+      minStock: Number(formData.minStock),
+      leadTime: Number(formData.leadTime)
+    };
 
-  const handleDeleteItem = (itemId) => {
-    if (window.confirm('Are you sure you want to delete this inventory item?')) {
-      deleteItemMutation.mutate(itemId);
+    if (selectedItem) {
+      updateItemMutation.mutate({ id: selectedItem._id, data: submitData });
+    } else {
+      createItemMutation.mutate(submitData);
     }
   };
 
-  const items = inventoryData?.items || [];
-  const pagination = inventoryData?.pagination || {};
-  const lowStockItems = items.filter(item => isLowStock(item));
+  const getStockStatus = (item) => {
+    if (item.qty <= 0) return { status: 'Out of Stock', color: 'destructive' };
+    if (item.qty <= item.minStock) return { status: 'Low Stock', color: 'destructive' };
+    if (item.qty <= item.minStock * 2) return { status: 'Warning', color: 'secondary' };
+    return { status: 'In Stock', color: 'default' };
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR'
+    }).format(amount);
+  };
+
+  // Available subcategories based on selected category
+  const availableSubCategories = categories
+    .find(cat => cat.name === formData.category)?.subCategories || [];
+
+  if (!canView) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold mb-2">Access Denied</h3>
+          <p className="text-gray-600">You don't have permission to view inventory.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <Package className="w-8 h-8 text-primary" />
-          <h1 className="text-2xl font-semibold">Inventory</h1>
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">Inventory Management</h1>
+          <p className="text-gray-600">Manage your inventory items, categories, and stock levels</p>
         </div>
-        <Button>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Item
-        </Button>
+        <div className="flex space-x-2">
+          {canAdd && (
+            <Button onClick={() => setIsAddModalOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Item
+            </Button>
+          )}
+          <Button variant="outline" onClick={() => setIsCategoryModalOpen(true)}>
+            <Settings className="h-4 w-4 mr-2" />
+            Categories
+          </Button>
+        </div>
       </div>
 
-      {/* Low Stock Alert */}
-      {lowStockItems.length > 0 && (
-        <Alert className="border-orange-200 bg-orange-50 dark:border-orange-900/50 dark:bg-orange-900/20">
-          <AlertTriangle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
-          <AlertDescription className="text-orange-800 dark:text-orange-200">
-            <strong>{lowStockItems.length}</strong> items are running low on stock and need to be restocked.
-          </AlertDescription>
-        </Alert>
-      )}
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <Package className="h-8 w-8 text-blue-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Total Items</p>
+                <div className="text-2xl font-bold">{stats.totalItems || 0}</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <DollarSign className="h-8 w-8 text-green-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Total Value</p>
+                <div className="text-2xl font-bold">{formatCurrency(stats.totalValue || 0)}</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <TrendingUp className="h-8 w-8 text-purple-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Total Quantity</p>
+                <div className="text-2xl font-bold">{stats.totalQty || 0}</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <AlertTriangle className="h-8 w-8 text-red-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Low Stock</p>
+                <div className="text-2xl font-bold">{stats.lowStockCount || 0}</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
+      {/* Filters */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+            <div className="md:col-span-2">
+              <Label htmlFor="search">Search</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  id="search"
+                  placeholder="Search items..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="type-filter">Type</Label>
+              <Select value={selectedType} onValueChange={setSelectedType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  {ITEM_TYPES.map(type => (
+                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label htmlFor="category-filter">Category</Label>
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {categories.map(category => (
+                    <SelectItem key={category._id} value={category.name}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label htmlFor="sort-filter">Sort By</Label>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name">Name</SelectItem>
+                  <SelectItem value="code">Code</SelectItem>
+                  <SelectItem value="qty">Quantity</SelectItem>
+                  <SelectItem value="stdCost">Cost</SelectItem>
+                  <SelectItem value="createdAt">Date Added</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex items-end">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="low-stock"
+                  checked={showLowStock}
+                  onCheckedChange={setShowLowStock}
+                />
+                <Label htmlFor="low-stock">Low Stock Only</Label>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Items Table */}
       <Card>
         <CardHeader>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-              <Input
-                placeholder="Search inventory..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="px-3 py-2 border border-border rounded-md bg-background text-foreground"
-            >
-              <option value="">All Categories</option>
-              <option value="Raw Material">Raw Material</option>
-              <option value="Work in Progress">Work in Progress</option>
-              <option value="Finished Goods">Finished Goods</option>
-              <option value="Consumables">Consumables</option>
-              <option value="Tools">Tools</option>
-            </select>
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={lowStock}
-                onChange={(e) => setLowStock(e.target.checked)}
-                className="w-4 h-4 text-primary bg-background border-border rounded focus:ring-primary"
-              />
-              <span className="text-sm">Low Stock Only</span>
-            </label>
-          </div>
+          <CardTitle>Inventory Items</CardTitle>
+          <CardDescription>
+            Showing {items.length} of {pagination.total} items
+          </CardDescription>
         </CardHeader>
-
         <CardContent>
-          {isLoading ? (
-            <div className="space-y-4">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="animate-pulse flex items-center space-x-4">
-                  <div className="h-4 bg-muted rounded w-32"></div>
-                  <div className="h-4 bg-muted rounded w-48"></div>
-                  <div className="h-6 bg-muted rounded w-20"></div>
-                  <div className="h-4 bg-muted rounded w-24"></div>
-                </div>
-              ))}
+          {itemsLoading ? (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             </div>
           ) : items.length === 0 ? (
-            <div className="text-center py-12">
-              <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">No inventory items found</p>
+            <div className="text-center py-8">
+              <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No items found</h3>
+              <p className="text-gray-600">Start by adding your first inventory item.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left py-3 px-4 font-medium">Item Code</th>
-                    <th className="text-left py-3 px-4 font-medium">Item Name</th>
-                    <th className="text-left py-3 px-4 font-medium">Category</th>
-                    <th className="text-left py-3 px-4 font-medium">Current Stock</th>
-                    <th className="text-left py-3 px-4 font-medium">Min Level</th>
-                    <th className="text-left py-3 px-4 font-medium">Unit Price</th>
-                    <th className="text-left py-3 px-4 font-medium">Status</th>
-                    <th className="text-left py-3 px-4 font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item) => (
-                    <tr 
-                      key={item._id} 
-                      className={`border-b border-border hover:bg-muted/50 ${
-                        isLowStock(item) ? 'bg-orange-50 dark:bg-orange-900/10' : ''
-                      }`}
-                    >
-                      <td className="py-3 px-4 font-medium">{item.itemCode}</td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center space-x-2">
-                          <span>{item.itemName}</span>
-                          {isLowStock(item) && (
-                            <AlertTriangle className="w-4 h-4 text-orange-500" />
-                          )}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <Badge className={getCategoryColor(item.category)}>
-                          {item.category}
-                        </Badge>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={isLowStock(item) ? 'text-orange-600 dark:text-orange-400 font-medium' : ''}>
-                          {item.currentStock} {item.unit}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">{item.minStockLevel}</td>
-                      <td className="py-3 px-4">${item.costPrice.toFixed(2)}</td>
-                      <td className="py-3 px-4">
-                        <Badge variant={item.isActive ? "default" : "secondary"}>
-                          {item.isActive ? "Active" : "Inactive"}
-                        </Badge>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center space-x-2">
-                          <Button variant="ghost" size="sm">
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteItem(item._id)}
-                            disabled={deleteItemMutation.isPending}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Item</TableHead>
+                    <TableHead>Code</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Quantity</TableHead>
+                    <TableHead>Unit</TableHead>
+                    <TableHead>Cost</TableHead>
+                    <TableHead>Sale Price</TableHead>
+                    <TableHead>Value</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {items.map((item) => {
+                    const stockStatus = getStockStatus(item);
+                    return (
+                      <TableRow key={item._id}>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{item.name}</div>
+                            {item.description && (
+                              <div className="text-sm text-gray-500">{item.description}</div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-mono">{item.code}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{item.type}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div>{item.category}</div>
+                            {item.subCategory && (
+                              <div className="text-sm text-gray-500">{item.subCategory}</div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">{item.qty}</TableCell>
+                        <TableCell>{item.unit}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(item.stdCost)}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(item.salePrice)}</TableCell>
+                        <TableCell className="text-right">
+                          {formatCurrency(item.qty * item.stdCost)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={stockStatus.color}>{stockStatus.status}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex space-x-2">
+                            {canEdit && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEdit(item)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {canDelete && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDelete(item._id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             </div>
           )}
-
+          
           {/* Pagination */}
           {pagination.pages > 1 && (
-            <div className="flex items-center justify-between mt-6">
-              <p className="text-sm text-muted-foreground">
-                Showing {((pagination.page - 1) * pagination.limit) + 1} to{' '}
-                {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
-                {pagination.total} items
-              </p>
-              <div className="flex items-center space-x-2">
+            <div className="flex justify-between items-center mt-4">
+              <div className="text-sm text-gray-700">
+                Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, pagination.total)} of {pagination.total} results
+              </div>
+              <div className="flex space-x-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setPage(page - 1)}
-                  disabled={page <= 1}
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={currentPage <= 1}
                 >
                   Previous
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setPage(page + 1)}
-                  disabled={page >= pagination.pages}
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={currentPage >= pagination.pages}
                 >
                   Next
                 </Button>
@@ -251,6 +584,365 @@ export default function Inventory() {
           )}
         </CardContent>
       </Card>
+
+      {/* Add/Edit Item Modal */}
+      <Dialog open={isAddModalOpen || isEditModalOpen} onOpenChange={(open) => {
+        if (!open) {
+          setIsAddModalOpen(false);
+          setIsEditModalOpen(false);
+          setSelectedItem(null);
+          resetForm();
+        }
+      }}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{selectedItem ? 'Edit Item' : 'Add New Item'}</DialogTitle>
+            <DialogDescription>
+              {selectedItem ? 'Update item details' : 'Enter item information to add to inventory'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Basic Information */}
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="name">Item Name *</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  placeholder="Enter item name"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="code">Item Code</Label>
+                <Input
+                  id="code"
+                  value={formData.code}
+                  onChange={(e) => handleInputChange('code', e.target.value)}
+                  placeholder="Auto-generated if empty"
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="category">Category *</Label>
+                  <Select
+                    value={formData.category}
+                    onValueChange={(value) => {
+                      handleInputChange('category', value);
+                      handleInputChange('subCategory', ''); // Reset subcategory
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map(category => (
+                        <SelectItem key={category._id} value={category.name}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <Label htmlFor="subCategory">Sub-Category</Label>
+                  <Select
+                    value={formData.subCategory}
+                    onValueChange={(value) => handleInputChange('subCategory', value)}
+                    disabled={!formData.category}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select sub-category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableSubCategories.map(subCat => (
+                        <SelectItem key={subCat} value={subCat}>
+                          {subCat}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="qty">Quantity *</Label>
+                  <Input
+                    id="qty"
+                    type="number"
+                    value={formData.qty}
+                    onChange={(e) => handleInputChange('qty', e.target.value)}
+                    min="0"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="unit">Unit *</Label>
+                  <Select
+                    value={formData.unit}
+                    onValueChange={(value) => handleInputChange('unit', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {UNITS.map(unit => (
+                        <SelectItem key={unit} value={unit}>
+                          {unit}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <Label htmlFor="importance">Importance</Label>
+                  <Select
+                    value={formData.importance}
+                    onValueChange={(value) => handleInputChange('importance', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {IMPORTANCE_LEVELS.map(level => (
+                        <SelectItem key={level} value={level}>
+                          {level}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="store">Store Location</Label>
+                  <Input
+                    id="store"
+                    value={formData.store}
+                    onChange={(e) => handleInputChange('store', e.target.value)}
+                    placeholder="Storage location"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="batch">Batch</Label>
+                  <Input
+                    id="batch"
+                    value={formData.batch}
+                    onChange={(e) => handleInputChange('batch', e.target.value)}
+                    placeholder="Batch number"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            {/* Type and Pricing */}
+            <div className="space-y-4">
+              <div>
+                <Label>Item Type</Label>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {ITEM_TYPES.map(type => (
+                    <Button
+                      key={type}
+                      type="button"
+                      variant={formData.type === type ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handleInputChange('type', type)}
+                    >
+                      {type}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="internalManufacturing"
+                    checked={formData.internalManufacturing}
+                    onCheckedChange={(checked) => handleInputChange('internalManufacturing', checked)}
+                  />
+                  <Label htmlFor="internalManufacturing">Internal Manufacturing</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="purchase"
+                    checked={formData.purchase}
+                    onCheckedChange={(checked) => handleInputChange('purchase', checked)}
+                  />
+                  <Label htmlFor="purchase">Purchase</Label>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="stdCost">Standard Cost</Label>
+                  <Input
+                    id="stdCost"
+                    type="number"
+                    value={formData.stdCost}
+                    onChange={(e) => handleInputChange('stdCost', e.target.value)}
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="purchaseCost">Purchase Cost</Label>
+                  <Input
+                    id="purchaseCost"
+                    type="number"
+                    value={formData.purchaseCost}
+                    onChange={(e) => handleInputChange('purchaseCost', e.target.value)}
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="salePrice">Sale Price</Label>
+                  <Input
+                    id="salePrice"
+                    type="number"
+                    value={formData.salePrice}
+                    onChange={(e) => handleInputChange('salePrice', e.target.value)}
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="mrp">MRP</Label>
+                  <Input
+                    id="mrp"
+                    type="number"
+                    value={formData.mrp}
+                    onChange={(e) => handleInputChange('mrp', e.target.value)}
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="hsn">HSN/SAC</Label>
+                  <Input
+                    id="hsn"
+                    value={formData.hsn}
+                    onChange={(e) => handleInputChange('hsn', e.target.value)}
+                    placeholder="HSN/SAC code"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="gst">GST %</Label>
+                  <Input
+                    id="gst"
+                    type="number"
+                    value={formData.gst}
+                    onChange={(e) => handleInputChange('gst', e.target.value)}
+                    min="0"
+                    max="100"
+                    step="0.01"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="minStock">Min Stock</Label>
+                  <Input
+                    id="minStock"
+                    type="number"
+                    value={formData.minStock}
+                    onChange={(e) => handleInputChange('minStock', e.target.value)}
+                    min="0"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="leadTime">Lead Time (days)</Label>
+                  <Input
+                    id="leadTime"
+                    type="number"
+                    value={formData.leadTime}
+                    onChange={(e) => handleInputChange('leadTime', e.target.value)}
+                    min="0"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Description and Notes */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => handleInputChange('description', e.target.value)}
+                placeholder="Item description"
+                rows="3"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="internalNotes">Internal Notes</Label>
+              <Textarea
+                id="internalNotes"
+                value={formData.internalNotes}
+                onChange={(e) => handleInputChange('internalNotes', e.target.value)}
+                placeholder="Internal notes"
+                rows="3"
+              />
+            </div>
+          </div>
+          
+          {/* Tags */}
+          <div>
+            <Label htmlFor="tags">Tags</Label>
+            <Input
+              id="tags"
+              value={formData.tags}
+              onChange={(e) => handleInputChange('tags', e.target.value)}
+              placeholder="Enter tags separated by commas"
+            />
+          </div>
+          
+          {/* Actions */}
+          <div className="flex justify-end space-x-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsAddModalOpen(false);
+                setIsEditModalOpen(false);
+                setSelectedItem(null);
+                resetForm();
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={createItemMutation.isPending || updateItemMutation.isPending}
+            >
+              {createItemMutation.isPending || updateItemMutation.isPending ? 'Saving...' : 'Save'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

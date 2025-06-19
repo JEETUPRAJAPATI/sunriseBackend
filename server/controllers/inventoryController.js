@@ -1,42 +1,115 @@
-import { Inventory, StockMovement } from '../models/Inventory.js';
+import { Item, Category, CustomerCategory } from '../models/Inventory.js';
 import { USER_ROLES } from '../../shared/schema.js';
 
-export const getInventory = async (req, res) => {
-  try {
-    const { page = 1, limit = 10, category, unitName, search, lowStock } = req.query;
-    const skip = (page - 1) * limit;
+// Helper function to check inventory permissions
+const checkInventoryPermission = (user, action) => {
+  return user.permissions?.Inventory?.[action] === true;
+};
 
+// Auto-generate item code
+const generateItemCode = async (type) => {
+  const prefix = type.substring(0, 3).toUpperCase();
+  const lastItem = await Item.findOne({ 
+    code: { $regex: `^${prefix}` } 
+  }).sort({ code: -1 });
+  
+  let nextNumber = 1;
+  if (lastItem) {
+    const lastNumber = parseInt(lastItem.code.substring(3));
+    nextNumber = lastNumber + 1;
+  }
+  
+  return `${prefix}${nextNumber.toString().padStart(4, '0')}`;
+};
+
+// ITEM CONTROLLERS
+export const getItems = async (req, res) => {
+  try {
+    if (!checkInventoryPermission(req.user, 'view')) {
+      return res.status(403).json({ message: 'Access denied. Insufficient permissions.' });
+    }
+
+    const { 
+      page = 1, 
+      limit = 20, 
+      search, 
+      type, 
+      category, 
+      subCategory, 
+      lowStock,
+      sortBy = 'name',
+      sortOrder = 'asc'
+    } = req.query;
+
+    const skip = (page - 1) * limit;
     let query = {};
 
-    if (req.user.role !== USER_ROLES.SUPER_USER) {
-      query.unitName = req.user.unit;
-    } else if (unitName) {
-      query.unitName = unitName;
-    }
-
-    if (category) {
-      query.category = category;
-    }
-
-    if (lowStock === 'true') {
-      query.$expr = { $lte: ['$currentStock', '$minStockLevel'] };
-    }
-
+    // Search filter
     if (search) {
       query.$or = [
-        { itemName: { $regex: search, $options: 'i' } },
-        { itemCode: { $regex: search, $options: 'i' } },
+        { name: { $regex: search, $options: 'i' } },
+        { code: { $regex: search, $options: 'i' } },
         { description: { $regex: search, $options: 'i' } }
       ];
     }
 
-    const items = await Inventory.find(query)
-      .populate('supplier', 'supplierName contactPerson')
-      .sort({ itemName: 1 })
+    // Type filter
+    if (type) {
+      query.type = type;
+    }
+
+    // Category filter
+    if (category) {
+      query.category = category;
+    }
+
+    // Subcategory filter
+    if (subCategory) {
+      query.subCategory = subCategory;
+    }
+
+    // Low stock filter
+    if (lowStock === 'true') {
+      query.$expr = { $lte: ['$qty', '$minStock'] };
+    }
+
+    // Sort options
+    const sortOptions = {};
+    sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
+
+    const items = await Item.find(query)
+      .sort(sortOptions)
       .skip(skip)
       .limit(parseInt(limit));
 
-    const total = await Inventory.countDocuments(query);
+    const total = await Item.countDocuments(query);
+
+    // Calculate inventory statistics
+    const stats = await Item.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalItems: { $sum: 1 },
+          totalValue: { $sum: { $multiply: ['$qty', '$stdCost'] } },
+          lowStockCount: {
+            $sum: {
+              $cond: [{ $lte: ['$qty', '$minStock'] }, 1, 0]
+            }
+          }
+        }
+      }
+    ]);
+
+    const typeStats = await Item.aggregate([
+      {
+        $group: {
+          _id: '$type',
+          count: { $sum: 1 },
+          totalQty: { $sum: '$qty' },
+          totalValue: { $sum: { $multiply: ['$qty', '$stdCost'] } }
+        }
+      }
+    ]);
 
     res.json({
       items,
@@ -45,261 +118,167 @@ export const getInventory = async (req, res) => {
         limit: parseInt(limit),
         total,
         pages: Math.ceil(total / limit)
-      }
+      },
+      stats: stats[0] || { totalItems: 0, totalValue: 0, lowStockCount: 0 },
+      typeStats
     });
   } catch (error) {
-    console.error('Get inventory error:', error);
+    console.error('Get items error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };
 
-export const getInventoryItemById = async (req, res) => {
+export const getItemById = async (req, res) => {
   try {
-    const { id } = req.params;
-    const item = await Inventory.findById(id).populate('supplier', 'supplierName contactPerson email phone');
-
-    if (!item) {
-      return res.status(404).json({ message: 'Inventory item not found' });
+    if (!checkInventoryPermission(req.user, 'view')) {
+      return res.status(403).json({ message: 'Access denied. Insufficient permissions.' });
     }
 
-    if (req.user.role !== USER_ROLES.SUPER_USER && item.unitName !== req.user.unit) {
-      return res.status(403).json({ message: 'Access denied' });
+    const { id } = req.params;
+    const item = await Item.findById(id);
+
+    if (!item) {
+      return res.status(404).json({ message: 'Item not found' });
     }
 
     res.json({ item });
   } catch (error) {
-    console.error('Get inventory item by ID error:', error);
+    console.error('Get item by ID error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };
 
-export const createInventoryItem = async (req, res) => {
+export const createItem = async (req, res) => {
   try {
-    const {
-      itemName,
-      description,
-      category,
-      unit,
-      currentStock,
-      minStockLevel,
-      maxStockLevel,
-      reorderPoint,
-      costPrice,
-      sellingPrice,
-      location,
-      supplier,
-      batchTracking,
-      expiryTracking
-    } = req.body;
-
-    if (!itemName || !category || !unit || costPrice === undefined) {
-      return res.status(400).json({ message: 'Item name, category, unit, and cost price are required' });
+    if (!checkInventoryPermission(req.user, 'add')) {
+      return res.status(403).json({ message: 'Access denied. Insufficient permissions.' });
     }
 
-    // Generate item code
-    const itemCode = `ITEM-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+    const itemData = req.body;
 
-    const itemData = {
-      itemCode,
-      itemName,
-      description,
-      category,
-      unit,
-      currentStock: currentStock || 0,
-      minStockLevel: minStockLevel || 10,
-      maxStockLevel: maxStockLevel || 1000,
-      reorderPoint: reorderPoint || 20,
-      costPrice,
-      sellingPrice,
-      location: location || { warehouse: 'Main' },
-      supplier,
-      unitName: req.user.role === USER_ROLES.SUPER_USER ? req.body.unitName : req.user.unit,
-      batchTracking: batchTracking || false,
-      expiryTracking: expiryTracking || false
-    };
-
-    const item = await Inventory.create(itemData);
-    await item.populate('supplier', 'supplierName contactPerson');
-
-    // Create initial stock movement if current stock > 0
-    if (currentStock > 0) {
-      await StockMovement.create({
-        item: item._id,
-        movementType: 'IN',
-        quantity: currentStock,
-        previousStock: 0,
-        newStock: currentStock,
-        reference: 'Initial Stock',
-        unit: item.unitName,
-        createdBy: req.user._id,
-        notes: 'Initial stock entry'
-      });
+    // Validate required fields
+    if (!itemData.name || !itemData.type || !itemData.category || !itemData.unit) {
+      return res.status(400).json({ message: 'Required fields: name, type, category, unit' });
     }
+
+    // Auto-generate code if not provided
+    if (!itemData.code) {
+      itemData.code = await generateItemCode(itemData.type);
+    } else {
+      // Check if code already exists
+      const existingItem = await Item.findOne({ code: itemData.code });
+      if (existingItem) {
+        return res.status(400).json({ message: 'Item code already exists' });
+      }
+    }
+
+    const item = await Item.create(itemData);
 
     res.status(201).json({
-      message: 'Inventory item created successfully',
+      message: 'Item created successfully',
       item
     });
   } catch (error) {
-    console.error('Create inventory item error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('Create item error:', error);
+    if (error.code === 11000) {
+      res.status(400).json({ message: 'Item code already exists' });
+    } else {
+      res.status(500).json({ message: 'Internal server error' });
+    }
   }
 };
 
-export const updateInventoryItem = async (req, res) => {
+export const updateItem = async (req, res) => {
   try {
+    if (!checkInventoryPermission(req.user, 'edit')) {
+      return res.status(403).json({ message: 'Access denied. Insufficient permissions.' });
+    }
+
     const { id } = req.params;
-    const {
-      itemName,
-      description,
-      category,
-      unit,
-      minStockLevel,
-      maxStockLevel,
-      reorderPoint,
-      costPrice,
-      sellingPrice,
-      location,
-      supplier,
-      isActive,
-      batchTracking,
-      expiryTracking
-    } = req.body;
+    const updateData = req.body;
 
-    const item = await Inventory.findById(id);
-
+    const item = await Item.findById(id);
     if (!item) {
-      return res.status(404).json({ message: 'Inventory item not found' });
+      return res.status(404).json({ message: 'Item not found' });
     }
 
-    if (req.user.role !== USER_ROLES.SUPER_USER && item.unitName !== req.user.unit) {
-      return res.status(403).json({ message: 'Access denied' });
+    // Check if code is being changed and if it already exists
+    if (updateData.code && updateData.code !== item.code) {
+      const existingItem = await Item.findOne({ code: updateData.code });
+      if (existingItem) {
+        return res.status(400).json({ message: 'Item code already exists' });
+      }
     }
 
-    const updateData = {};
-    if (itemName) updateData.itemName = itemName;
-    if (description !== undefined) updateData.description = description;
-    if (category) updateData.category = category;
-    if (unit) updateData.unit = unit;
-    if (minStockLevel !== undefined) updateData.minStockLevel = minStockLevel;
-    if (maxStockLevel !== undefined) updateData.maxStockLevel = maxStockLevel;
-    if (reorderPoint !== undefined) updateData.reorderPoint = reorderPoint;
-    if (costPrice !== undefined) updateData.costPrice = costPrice;
-    if (sellingPrice !== undefined) updateData.sellingPrice = sellingPrice;
-    if (location) updateData.location = location;
-    if (supplier) updateData.supplier = supplier;
-    if (typeof isActive === 'boolean') updateData.isActive = isActive;
-    if (typeof batchTracking === 'boolean') updateData.batchTracking = batchTracking;
-    if (typeof expiryTracking === 'boolean') updateData.expiryTracking = expiryTracking;
-
-    const updatedItem = await Inventory.findByIdAndUpdate(
+    const updatedItem = await Item.findByIdAndUpdate(
       id,
       updateData,
-      { new: true }
-    ).populate('supplier', 'supplierName contactPerson');
+      { new: true, runValidators: true }
+    );
 
     res.json({
-      message: 'Inventory item updated successfully',
+      message: 'Item updated successfully',
       item: updatedItem
     });
   } catch (error) {
-    console.error('Update inventory item error:', error);
+    console.error('Update item error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };
 
-export const deleteInventoryItem = async (req, res) => {
+export const deleteItem = async (req, res) => {
   try {
+    if (!checkInventoryPermission(req.user, 'delete')) {
+      return res.status(403).json({ message: 'Access denied. Insufficient permissions.' });
+    }
+
     const { id } = req.params;
 
-    const item = await Inventory.findById(id);
-
+    const item = await Item.findById(id);
     if (!item) {
-      return res.status(404).json({ message: 'Inventory item not found' });
+      return res.status(404).json({ message: 'Item not found' });
     }
 
-    if (req.user.role !== USER_ROLES.SUPER_USER && item.unitName !== req.user.unit) {
-      return res.status(403).json({ message: 'Access denied' });
-    }
+    await Item.findByIdAndDelete(id);
 
-    if (item.currentStock > 0) {
-      return res.status(400).json({ message: 'Cannot delete item with existing stock' });
-    }
-
-    await Inventory.findByIdAndDelete(id);
-
-    res.json({ message: 'Inventory item deleted successfully' });
+    res.json({ message: 'Item deleted successfully' });
   } catch (error) {
-    console.error('Delete inventory item error:', error);
+    console.error('Delete item error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const adjustStock = async (req, res) => {
   try {
+    if (!checkInventoryPermission(req.user, 'edit')) {
+      return res.status(403).json({ message: 'Access denied. Insufficient permissions.' });
+    }
+
     const { id } = req.params;
-    const { quantity, movementType, reference, batchNumber, expiryDate, notes } = req.body;
+    const { adjustment, reason } = req.body;
 
-    if (!quantity || !movementType || !reference) {
-      return res.status(400).json({ message: 'Quantity, movement type, and reference are required' });
+    if (typeof adjustment !== 'number') {
+      return res.status(400).json({ message: 'Adjustment must be a number' });
     }
 
-    const item = await Inventory.findById(id);
-
+    const item = await Item.findById(id);
     if (!item) {
-      return res.status(404).json({ message: 'Inventory item not found' });
+      return res.status(404).json({ message: 'Item not found' });
     }
 
-    if (req.user.role !== USER_ROLES.SUPER_USER && item.unitName !== req.user.unit) {
-      return res.status(403).json({ message: 'Access denied' });
+    const newQty = item.qty + adjustment;
+    if (newQty < 0) {
+      return res.status(400).json({ message: 'Insufficient stock for this adjustment' });
     }
 
-    const previousStock = item.currentStock;
-    let newStock;
-
-    switch (movementType) {
-      case 'IN':
-        newStock = previousStock + quantity;
-        break;
-      case 'OUT':
-        if (quantity > previousStock) {
-          return res.status(400).json({ message: 'Insufficient stock' });
-        }
-        newStock = previousStock - quantity;
-        break;
-      case 'ADJUSTMENT':
-        newStock = quantity;
-        break;
-      default:
-        return res.status(400).json({ message: 'Invalid movement type' });
-    }
-
-    // Update item stock
-    item.currentStock = newStock;
+    item.qty = newQty;
     await item.save();
-
-    // Create stock movement record
-    await StockMovement.create({
-      item: id,
-      movementType,
-      quantity: movementType === 'ADJUSTMENT' ? Math.abs(quantity - previousStock) : quantity,
-      previousStock,
-      newStock,
-      reference,
-      batchNumber,
-      expiryDate: expiryDate ? new Date(expiryDate) : undefined,
-      unit: item.unitName,
-      createdBy: req.user._id,
-      notes
-    });
 
     res.json({
       message: 'Stock adjusted successfully',
-      item: {
-        ...item.toJSON(),
-        previousStock,
-        newStock
-      }
+      item,
+      adjustment,
+      reason
     });
   } catch (error) {
     console.error('Adjust stock error:', error);
@@ -307,98 +286,271 @@ export const adjustStock = async (req, res) => {
   }
 };
 
-export const getStockMovements = async (req, res) => {
+// CATEGORY CONTROLLERS
+export const getCategories = async (req, res) => {
   try {
-    const { page = 1, limit = 10, itemId, movementType, unitName } = req.query;
-    const skip = (page - 1) * limit;
-
-    let query = {};
-
-    if (req.user.role !== USER_ROLES.SUPER_USER) {
-      query.unit = req.user.unit;
-    } else if (unitName) {
-      query.unit = unitName;
+    if (!checkInventoryPermission(req.user, 'view')) {
+      return res.status(403).json({ message: 'Access denied. Insufficient permissions.' });
     }
 
-    if (itemId) {
-      query.item = itemId;
+    const categories = await Category.find().sort({ name: 1 });
+    res.json({ categories });
+  } catch (error) {
+    console.error('Get categories error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const createCategory = async (req, res) => {
+  try {
+    if (!checkInventoryPermission(req.user, 'add')) {
+      return res.status(403).json({ message: 'Access denied. Insufficient permissions.' });
     }
 
-    if (movementType) {
-      query.movementType = movementType;
+    const { name, subCategories = [] } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ message: 'Category name is required' });
     }
 
-    const movements = await StockMovement.find(query)
-      .populate('item', 'itemName itemCode')
-      .populate('createdBy', 'fullName')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(parseInt(limit));
+    const category = await Category.create({ name, subCategories });
 
-    const total = await StockMovement.countDocuments(query);
-
-    res.json({
-      movements,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / limit)
-      }
+    res.status(201).json({
+      message: 'Category created successfully',
+      category
     });
   } catch (error) {
-    console.error('Get stock movements error:', error);
+    console.error('Create category error:', error);
+    if (error.code === 11000) {
+      res.status(400).json({ message: 'Category name already exists' });
+    } else {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  }
+};
+
+export const updateCategory = async (req, res) => {
+  try {
+    if (!checkInventoryPermission(req.user, 'edit')) {
+      return res.status(403).json({ message: 'Access denied. Insufficient permissions.' });
+    }
+
+    const { id } = req.params;
+    const updateData = req.body;
+
+    const category = await Category.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    if (!category) {
+      return res.status(404).json({ message: 'Category not found' });
+    }
+
+    res.json({
+      message: 'Category updated successfully',
+      category
+    });
+  } catch (error) {
+    console.error('Update category error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const deleteCategory = async (req, res) => {
+  try {
+    if (!checkInventoryPermission(req.user, 'delete')) {
+      return res.status(403).json({ message: 'Access denied. Insufficient permissions.' });
+    }
+
+    const { id } = req.params;
+
+    // Check if category is being used by any items
+    const itemsUsingCategory = await Item.countDocuments({ 
+      $or: [
+        { category: id },
+        { category: (await Category.findById(id))?.name }
+      ]
+    });
+
+    if (itemsUsingCategory > 0) {
+      return res.status(400).json({ 
+        message: `Cannot delete category. ${itemsUsingCategory} items are using this category.` 
+      });
+    }
+
+    const category = await Category.findByIdAndDelete(id);
+
+    if (!category) {
+      return res.status(404).json({ message: 'Category not found' });
+    }
+
+    res.json({ message: 'Category deleted successfully' });
+  } catch (error) {
+    console.error('Delete category error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// CUSTOMER CATEGORY CONTROLLERS
+export const getCustomerCategories = async (req, res) => {
+  try {
+    if (!checkInventoryPermission(req.user, 'view')) {
+      return res.status(403).json({ message: 'Access denied. Insufficient permissions.' });
+    }
+
+    const customerCategories = await CustomerCategory.find().sort({ name: 1 });
+    res.json({ customerCategories });
+  } catch (error) {
+    console.error('Get customer categories error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const createCustomerCategory = async (req, res) => {
+  try {
+    if (!checkInventoryPermission(req.user, 'add')) {
+      return res.status(403).json({ message: 'Access denied. Insufficient permissions.' });
+    }
+
+    const { name, description } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ message: 'Customer category name is required' });
+    }
+
+    const customerCategory = await CustomerCategory.create({ name, description });
+
+    res.status(201).json({
+      message: 'Customer category created successfully',
+      customerCategory
+    });
+  } catch (error) {
+    console.error('Create customer category error:', error);
+    if (error.code === 11000) {
+      res.status(400).json({ message: 'Customer category name already exists' });
+    } else {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  }
+};
+
+export const updateCustomerCategory = async (req, res) => {
+  try {
+    if (!checkInventoryPermission(req.user, 'edit')) {
+      return res.status(403).json({ message: 'Access denied. Insufficient permissions.' });
+    }
+
+    const { id } = req.params;
+    const updateData = req.body;
+
+    const customerCategory = await CustomerCategory.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    if (!customerCategory) {
+      return res.status(404).json({ message: 'Customer category not found' });
+    }
+
+    res.json({
+      message: 'Customer category updated successfully',
+      customerCategory
+    });
+  } catch (error) {
+    console.error('Update customer category error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const deleteCustomerCategory = async (req, res) => {
+  try {
+    if (!checkInventoryPermission(req.user, 'delete')) {
+      return res.status(403).json({ message: 'Access denied. Insufficient permissions.' });
+    }
+
+    const { id } = req.params;
+
+    const customerCategory = await CustomerCategory.findByIdAndDelete(id);
+
+    if (!customerCategory) {
+      return res.status(404).json({ message: 'Customer category not found' });
+    }
+
+    res.json({ message: 'Customer category deleted successfully' });
+  } catch (error) {
+    console.error('Delete customer category error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// UTILITY CONTROLLERS
+export const getLowStockItems = async (req, res) => {
+  try {
+    if (!checkInventoryPermission(req.user, 'view')) {
+      return res.status(403).json({ message: 'Access denied. Insufficient permissions.' });
+    }
+
+    const lowStockItems = await Item.find({
+      $expr: { $lte: ['$qty', '$minStock'] }
+    }).sort({ qty: 1 });
+
+    res.json({ lowStockItems });
+  } catch (error) {
+    console.error('Get low stock items error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const getInventoryStats = async (req, res) => {
   try {
-    const { unitName } = req.query;
-    let query = {};
-
-    if (req.user.role !== USER_ROLES.SUPER_USER) {
-      query.unitName = req.user.unit;
-    } else if (unitName) {
-      query.unitName = unitName;
+    if (!checkInventoryPermission(req.user, 'view')) {
+      return res.status(403).json({ message: 'Access denied. Insufficient permissions.' });
     }
 
-    const [totalItems, lowStockItems, outOfStockItems, totalValue] = await Promise.all([
-      Inventory.countDocuments({ ...query, isActive: true }),
-      Inventory.countDocuments({
-        ...query,
-        isActive: true,
-        $expr: { $lte: ['$currentStock', '$minStockLevel'] }
-      }),
-      Inventory.countDocuments({
-        ...query,
-        isActive: true,
-        currentStock: 0
-      }),
-      Inventory.aggregate([
-        { $match: { ...query, isActive: true } },
-        { $group: { _id: null, total: { $sum: { $multiply: ['$currentStock', '$costPrice'] } } } }
-      ])
+    const stats = await Item.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalItems: { $sum: 1 },
+          totalValue: { $sum: { $multiply: ['$qty', '$stdCost'] } },
+          totalQty: { $sum: '$qty' },
+          lowStockCount: {
+            $sum: {
+              $cond: [{ $lte: ['$qty', '$minStock'] }, 1, 0]
+            }
+          }
+        }
+      }
     ]);
 
-    const categoryStats = await Inventory.aggregate([
-      { $match: { ...query, isActive: true } },
+    const categoryStats = await Item.aggregate([
       {
         $group: {
           _id: '$category',
           count: { $sum: 1 },
-          totalStock: { $sum: '$currentStock' },
-          totalValue: { $sum: { $multiply: ['$currentStock', '$costPrice'] } }
+          totalValue: { $sum: { $multiply: ['$qty', '$stdCost'] } }
+        }
+      },
+      { $sort: { count: -1 } }
+    ]);
+
+    const typeStats = await Item.aggregate([
+      {
+        $group: {
+          _id: '$type',
+          count: { $sum: 1 },
+          totalValue: { $sum: { $multiply: ['$qty', '$stdCost'] } }
         }
       }
     ]);
 
     res.json({
-      totalItems,
-      lowStockItems,
-      outOfStockItems,
-      totalValue: totalValue.length > 0 ? totalValue[0].total : 0,
-      categoryStats
+      overview: stats[0] || { totalItems: 0, totalValue: 0, totalQty: 0, lowStockCount: 0 },
+      categoryStats,
+      typeStats
     });
   } catch (error) {
     console.error('Get inventory stats error:', error);

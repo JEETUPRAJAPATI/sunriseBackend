@@ -1,143 +1,166 @@
 import mongoose from 'mongoose';
 
-const inventorySchema = new mongoose.Schema({
-  itemCode: {
+const itemSchema = new mongoose.Schema({
+  name: {
     type: String,
     required: true,
-    unique: true
+    trim: true
   },
-  itemName: {
+  code: {
     type: String,
-    required: true
-  },
-  description: {
-    type: String
+    required: true,
+    unique: true,
+    trim: true
   },
   category: {
     type: String,
     required: true,
-    enum: ['Raw Material', 'Work in Progress', 'Finished Goods', 'Consumables', 'Tools']
+    trim: true
+  },
+  subCategory: {
+    type: String,
+    trim: true
+  },
+  batch: {
+    type: String,
+    trim: true
+  },
+  qty: {
+    type: Number,
+    required: true,
+    min: 0,
+    default: 0
   },
   unit: {
     type: String,
-    required: true
-  },
-  currentStock: {
-    type: Number,
     required: true,
-    default: 0,
-    min: 0
+    trim: true
   },
-  minStockLevel: {
-    type: Number,
-    required: true,
-    default: 10,
-    min: 0
-  },
-  maxStockLevel: {
-    type: Number,
-    required: true,
-    default: 1000,
-    min: 0
-  },
-  reorderPoint: {
-    type: Number,
-    required: true,
-    default: 20,
-    min: 0
-  },
-  costPrice: {
-    type: Number,
-    required: true,
-    min: 0
-  },
-  sellingPrice: {
-    type: Number,
-    min: 0
-  },
-  location: {
-    warehouse: {
-      type: String,
-      required: true
-    },
-    rack: String,
-    bin: String
-  },
-  supplier: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Supplier'
-  },
-  unitName: {
+  store: {
     type: String,
-    required: true
+    trim: true
   },
-  isActive: {
+  importance: {
+    type: String,
+    enum: ['Low', 'Normal', 'High', 'Critical'],
+    default: 'Normal'
+  },
+  type: {
+    type: String,
+    required: true,
+    enum: ['Product', 'Material', 'Spares', 'Assemblies']
+  },
+  stdCost: {
+    type: Number,
+    min: 0,
+    default: 0
+  },
+  purchaseCost: {
+    type: Number,
+    min: 0,
+    default: 0
+  },
+  salePrice: {
+    type: Number,
+    min: 0,
+    default: 0
+  },
+  hsn: {
+    type: String,
+    trim: true
+  },
+  gst: {
+    type: Number,
+    min: 0,
+    max: 100,
+    default: 0
+  },
+  mrp: {
+    type: Number,
+    min: 0,
+    default: 0
+  },
+  internalManufacturing: {
+    type: Boolean,
+    default: false
+  },
+  purchase: {
     type: Boolean,
     default: true
   },
-  batchTracking: {
-    type: Boolean,
-    default: false
+  description: {
+    type: String,
+    trim: true
   },
-  expiryTracking: {
-    type: Boolean,
-    default: false
+  internalNotes: {
+    type: String,
+    trim: true
+  },
+  minStock: {
+    type: Number,
+    min: 0,
+    default: 0
+  },
+  leadTime: {
+    type: Number,
+    min: 0,
+    default: 0
+  },
+  tags: [{
+    type: String,
+    trim: true
+  }],
+  customerPrices: [{
+    category: {
+      type: String,
+      required: true
+    },
+    price: {
+      type: Number,
+      required: true,
+      min: 0
+    }
+  }]
+}, {
+  timestamps: true
+});
+
+const categorySchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true
+  },
+  subCategories: [{
+    type: String,
+    trim: true
+  }]
+}, {
+  timestamps: true
+});
+
+const customerCategorySchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true
+  },
+  description: {
+    type: String,
+    trim: true
   }
 }, {
   timestamps: true
 });
 
-const stockMovementSchema = new mongoose.Schema({
-  item: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Inventory',
-    required: true
-  },
-  movementType: {
-    type: String,
-    enum: ['IN', 'OUT', 'TRANSFER', 'ADJUSTMENT'],
-    required: true
-  },
-  quantity: {
-    type: Number,
-    required: true
-  },
-  previousStock: {
-    type: Number,
-    required: true
-  },
-  newStock: {
-    type: Number,
-    required: true
-  },
-  reference: {
-    type: String,
-    required: true
-  },
-  referenceId: {
-    type: mongoose.Schema.Types.ObjectId
-  },
-  batchNumber: {
-    type: String
-  },
-  expiryDate: {
-    type: Date
-  },
-  unit: {
-    type: String,
-    required: true
-  },
-  createdBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  notes: {
-    type: String
-  }
-}, {
-  timestamps: true
-});
+// Indexes for better performance
+itemSchema.index({ name: 1, code: 1 });
+itemSchema.index({ category: 1, subCategory: 1 });
+itemSchema.index({ type: 1 });
+itemSchema.index({ qty: 1, minStock: 1 });
 
-export const Inventory = mongoose.model('Inventory', inventorySchema);
-export const StockMovement = mongoose.model('StockMovement', stockMovementSchema);
+export const Item = mongoose.model('Item', itemSchema);
+export const Category = mongoose.model('Category', categorySchema);
+export const CustomerCategory = mongoose.model('CustomerCategory', customerCategorySchema);
