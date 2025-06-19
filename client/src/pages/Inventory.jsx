@@ -59,6 +59,438 @@ const ITEM_TYPES = ['Product', 'Material', 'Spares', 'Assemblies'];
 const IMPORTANCE_LEVELS = ['Low', 'Normal', 'High', 'Critical'];
 const UNITS = ['pieces', 'kg', 'liters', 'meters', 'sheets', 'boxes', 'units'];
 
+// Category Management Component
+function CategoryManagement() {
+  const queryClient = useQueryClient();
+  const [newCategory, setNewCategory] = useState({ name: '', subCategories: [''] });
+  const [editingCategory, setEditingCategory] = useState(null);
+
+  const { data: categoriesData } = useQuery({
+    queryKey: ['/api/categories'],
+    retry: false
+  });
+
+  const categories = categoriesData?.categories || [];
+
+  const createCategoryMutation = useMutation({
+    mutationFn: async (categoryData) => {
+      const response = await api.post('/api/categories', {
+        ...categoryData,
+        subCategories: categoryData.subCategories.filter(sub => sub.trim())
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
+      setNewCategory({ name: '', subCategories: [''] });
+    }
+  });
+
+  const updateCategoryMutation = useMutation({
+    mutationFn: async ({ id, data }) => {
+      const response = await api.put(`/api/categories/${id}`, {
+        ...data,
+        subCategories: data.subCategories.filter(sub => sub.trim())
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
+      setEditingCategory(null);
+    }
+  });
+
+  const deleteCategoryMutation = useMutation({
+    mutationFn: async (id) => {
+      const response = await api.delete(`/api/categories/${id}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
+    }
+  });
+
+  const handleAddSubCategory = (category) => {
+    if (editingCategory?._id === category._id) {
+      setEditingCategory({
+        ...editingCategory,
+        subCategories: [...editingCategory.subCategories, '']
+      });
+    } else {
+      setNewCategory({
+        ...newCategory,
+        subCategories: [...newCategory.subCategories, '']
+      });
+    }
+  };
+
+  const handleRemoveSubCategory = (index, category) => {
+    if (editingCategory?._id === category._id) {
+      setEditingCategory({
+        ...editingCategory,
+        subCategories: editingCategory.subCategories.filter((_, i) => i !== index)
+      });
+    } else {
+      setNewCategory({
+        ...newCategory,
+        subCategories: newCategory.subCategories.filter((_, i) => i !== index)
+      });
+    }
+  };
+
+  const handleSubCategoryChange = (index, value, category) => {
+    if (editingCategory?._id === category._id) {
+      const updated = [...editingCategory.subCategories];
+      updated[index] = value;
+      setEditingCategory({ ...editingCategory, subCategories: updated });
+    } else {
+      const updated = [...newCategory.subCategories];
+      updated[index] = value;
+      setNewCategory({ ...newCategory, subCategories: updated });
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Add New Category */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Add New Category</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label htmlFor="category-name">Category Name</Label>
+            <Input
+              id="category-name"
+              value={newCategory.name}
+              onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
+              placeholder="Enter category name"
+            />
+          </div>
+          
+          <div>
+            <Label>Sub-Categories</Label>
+            <div className="space-y-2">
+              {newCategory.subCategories.map((subCat, index) => (
+                <div key={index} className="flex gap-2">
+                  <Input
+                    value={subCat}
+                    onChange={(e) => handleSubCategoryChange(index, e.target.value, null)}
+                    placeholder="Enter sub-category name"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleRemoveSubCategory(index, null)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => handleAddSubCategory(null)}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Sub-Category
+              </Button>
+            </div>
+          </div>
+          
+          <Button
+            onClick={() => createCategoryMutation.mutate(newCategory)}
+            disabled={!newCategory.name.trim() || createCategoryMutation.isPending}
+          >
+            {createCategoryMutation.isPending ? 'Creating...' : 'Create Category'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Existing Categories */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Existing Categories</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {categories.map((category) => (
+              <div key={category._id} className="border rounded-lg p-4">
+                {editingCategory?._id === category._id ? (
+                  <div className="space-y-4">
+                    <Input
+                      value={editingCategory.name}
+                      onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })}
+                    />
+                    
+                    <div>
+                      <Label>Sub-Categories</Label>
+                      <div className="space-y-2">
+                        {editingCategory.subCategories.map((subCat, index) => (
+                          <div key={index} className="flex gap-2">
+                            <Input
+                              value={subCat}
+                              onChange={(e) => handleSubCategoryChange(index, e.target.value, editingCategory)}
+                              placeholder="Enter sub-category name"
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleRemoveSubCategory(index, editingCategory)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleAddSubCategory(editingCategory)}
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Sub-Category
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => updateCategoryMutation.mutate({ 
+                          id: editingCategory._id, 
+                          data: editingCategory 
+                        })}
+                        disabled={updateCategoryMutation.isPending}
+                      >
+                        {updateCategoryMutation.isPending ? 'Saving...' : 'Save'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setEditingCategory(null)}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="font-medium">{category.name}</h4>
+                      {category.subCategories.length > 0 && (
+                        <div className="mt-2">
+                          <p className="text-sm text-gray-600">Sub-categories:</p>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {category.subCategories.map((subCat, index) => (
+                              <Badge key={index} variant="secondary">
+                                {subCat}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setEditingCategory(category)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          if (window.confirm('Are you sure you want to delete this category?')) {
+                            deleteCategoryMutation.mutate(category._id);
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// Customer Category Management Component
+function CustomerCategoryManagement() {
+  const queryClient = useQueryClient();
+  const [newCustomerCategory, setNewCustomerCategory] = useState({ name: '', description: '' });
+  const [editingCustomerCategory, setEditingCustomerCategory] = useState(null);
+
+  const { data: customerCategoriesData } = useQuery({
+    queryKey: ['/api/customer-categories'],
+    retry: false
+  });
+
+  const customerCategories = customerCategoriesData?.customerCategories || [];
+
+  const createCustomerCategoryMutation = useMutation({
+    mutationFn: async (categoryData) => {
+      const response = await api.post('/api/customer-categories', categoryData);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/customer-categories'] });
+      setNewCustomerCategory({ name: '', description: '' });
+    }
+  });
+
+  const updateCustomerCategoryMutation = useMutation({
+    mutationFn: async ({ id, data }) => {
+      const response = await api.put(`/api/customer-categories/${id}`, data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/customer-categories'] });
+      setEditingCustomerCategory(null);
+    }
+  });
+
+  const deleteCustomerCategoryMutation = useMutation({
+    mutationFn: async (id) => {
+      const response = await api.delete(`/api/customer-categories/${id}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/customer-categories'] });
+    }
+  });
+
+  return (
+    <div className="space-y-6">
+      {/* Add New Customer Category */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Add New Customer Category</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label htmlFor="customer-category-name">Category Name</Label>
+            <Input
+              id="customer-category-name"
+              value={newCustomerCategory.name}
+              onChange={(e) => setNewCustomerCategory({ ...newCustomerCategory, name: e.target.value })}
+              placeholder="Enter customer category name"
+            />
+          </div>
+          
+          <div>
+            <Label htmlFor="customer-category-description">Description</Label>
+            <Textarea
+              id="customer-category-description"
+              value={newCustomerCategory.description}
+              onChange={(e) => setNewCustomerCategory({ ...newCustomerCategory, description: e.target.value })}
+              placeholder="Enter description"
+              rows="3"
+            />
+          </div>
+          
+          <Button
+            onClick={() => createCustomerCategoryMutation.mutate(newCustomerCategory)}
+            disabled={!newCustomerCategory.name.trim() || createCustomerCategoryMutation.isPending}
+          >
+            {createCustomerCategoryMutation.isPending ? 'Creating...' : 'Create Customer Category'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Existing Customer Categories */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Existing Customer Categories</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {customerCategories.map((category) => (
+              <div key={category._id} className="border rounded-lg p-4">
+                {editingCustomerCategory?._id === category._id ? (
+                  <div className="space-y-4">
+                    <Input
+                      value={editingCustomerCategory.name}
+                      onChange={(e) => setEditingCustomerCategory({ ...editingCustomerCategory, name: e.target.value })}
+                      placeholder="Category name"
+                    />
+                    
+                    <Textarea
+                      value={editingCustomerCategory.description}
+                      onChange={(e) => setEditingCustomerCategory({ ...editingCustomerCategory, description: e.target.value })}
+                      placeholder="Description"
+                      rows="3"
+                    />
+                    
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => updateCustomerCategoryMutation.mutate({ 
+                          id: editingCustomerCategory._id, 
+                          data: editingCustomerCategory 
+                        })}
+                        disabled={updateCustomerCategoryMutation.isPending}
+                      >
+                        {updateCustomerCategoryMutation.isPending ? 'Saving...' : 'Save'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setEditingCustomerCategory(null)}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="font-medium">{category.name}</h4>
+                      {category.description && (
+                        <p className="text-sm text-gray-600 mt-1">{category.description}</p>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setEditingCustomerCategory(category)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          if (window.confirm('Are you sure you want to delete this customer category?')) {
+                            deleteCustomerCategoryMutation.mutate(category._id);
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function Inventory() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -584,6 +1016,33 @@ export default function Inventory() {
           )}
         </CardContent>
       </Card>
+
+      {/* Category Management Modal */}
+      <Dialog open={isCategoryModalOpen} onOpenChange={setIsCategoryModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Category Management</DialogTitle>
+            <DialogDescription>
+              Manage product categories and customer categories
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Tabs defaultValue="categories" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="categories">Product Categories</TabsTrigger>
+              <TabsTrigger value="customer-categories">Customer Categories</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="categories" className="space-y-4">
+              <CategoryManagement />
+            </TabsContent>
+            
+            <TabsContent value="customer-categories" className="space-y-4">
+              <CustomerCategoryManagement />
+            </TabsContent>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
 
       {/* Add/Edit Item Modal */}
       <Dialog open={isAddModalOpen || isEditModalOpen} onOpenChange={(open) => {
