@@ -135,7 +135,9 @@ export const changePassword = async (req, res) => {
       return res.status(400).json({ message: 'Old password and new password are required' });
     }
 
-    const user = await User.findById(req.user.userId);
+    // Handle different user ID formats from auth middleware
+    const userId = req.user.userId?.userId || req.user.userId || req.user._id;
+    const user = await User.findById(userId);
     
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -151,6 +153,9 @@ export const changePassword = async (req, res) => {
     const saltRounds = 10;
     const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
 
+    // Handle different user ID formats from auth middleware
+    const userId = req.user.userId?.userId || req.user.userId || req.user._id;
+    
     // Update password
     await User.findByIdAndUpdate(userId, {
       password: hashedNewPassword
