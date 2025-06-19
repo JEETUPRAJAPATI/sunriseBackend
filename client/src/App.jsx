@@ -21,7 +21,7 @@ import Settings from "@/pages/Settings";
 import UserManagement from "@/pages/UserManagement";
 import { useAuth } from "@/hooks/useAuth";
 import MainLayout from "@/components/layout/MainLayout";
-
+import Profile from "@/pages/Profile";
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
 
@@ -107,6 +107,11 @@ function Router() {
       <Route path="/user-management">
         <ProtectedRoute>
           <UserManagement />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/profile">
+        <ProtectedRoute>
+          <Profile />
         </ProtectedRoute>
       </Route>
       <Route component={NotFound} />

@@ -12,6 +12,9 @@ import {
   resetUserPassword 
 } from './controllers/userController.js';
 import bcrypt from 'bcryptjs';
+import { profileUpload } from './middleware/upload.js';
+import path from 'path';
+import fs from 'fs';
 
 const router = express.Router();
 

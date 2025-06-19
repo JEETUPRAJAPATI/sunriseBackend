@@ -66,14 +66,14 @@ app.use('/uploads', express.static('uploads'));
     // STEP 1: Add middleware
     app.use(express.json());
     app.use(cookieParser());
+    
+    // Static file serving for uploaded images
+    app.use('/uploads', express.static('uploads'));
 
     // STEP 2: Register API routes DIRECTLY
     try {
       const authRoutes = (await import('./auth-routes.js')).default;
       app.use('/api', authRoutes);
-      
-      const profileRoutes = (await import('./routes/profileRoutes.js')).default;
-      app.use('/api/users', profileRoutes);
       
       const inventoryRoutes = (await import('./routes/inventoryRoutes.js')).default;
       app.use('/api', inventoryRoutes);
