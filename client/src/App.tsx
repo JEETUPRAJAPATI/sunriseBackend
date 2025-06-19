@@ -41,9 +41,9 @@ function ProtectedRoute({ component: Component, ...props }) {
 function Router() {
   return (
     <Switch>
+      <Route path="/profile" component={() => <ProtectedRoute component={Profile} />} />
       <Route path="/user-management" component={() => <ProtectedRoute component={UserManagement} />} />
       <Route path="/inventory" component={() => <ProtectedRoute component={Inventory} />} />
-      <Route path="/profile" component={() => <ProtectedRoute component={Profile} />} />
       <Route path="/dashboard" component={() => <ProtectedRoute component={Dashboard} />} />
       <Route path="/" component={() => <ProtectedRoute component={Dashboard} />} />
       <Route component={NotFound} />

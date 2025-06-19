@@ -43,6 +43,7 @@ export const getProfile = async (req, res) => {
     // Handle different user ID formats from auth middleware
     const userId = req.user.userId?.userId || req.user.userId || req.user._id;
     console.log('Looking for user ID:', userId);
+    console.log('User object from middleware:', JSON.stringify(req.user, null, 2));
     
     const user = await User.findById(userId).select('-password');
     console.log('Found user:', user ? 'Yes' : 'No');
