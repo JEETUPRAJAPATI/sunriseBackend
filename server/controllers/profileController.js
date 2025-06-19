@@ -1,4 +1,4 @@
-import { User } from '../models/User.js';
+import User from '../models/User.js';
 import bcrypt from 'bcryptjs';
 import multer from 'multer';
 import path from 'path';

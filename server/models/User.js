@@ -25,8 +25,10 @@ const userSchema = new mongoose.Schema({
   },
   fullName: {
     type: String,
-    required: true,
     trim: true
+  },
+  profilePicture: {
+    type: String
   },
   role: {
     type: String,
@@ -43,6 +45,11 @@ const userSchema = new mongoose.Schema({
   permissions: {
     type: Object,
     default: {}
+  },
+  profile: {
+    modules: [{
+      type: String
+    }]
   },
   isActive: {
     type: Boolean,
