@@ -597,6 +597,7 @@ export default function Inventory() {
     minStock: 0,
     leadTime: 0,
     tags: '',
+    customerCategory: '',
     customerPrices: []
   });
 
@@ -731,6 +732,7 @@ export default function Inventory() {
       minStock: 0,
       leadTime: 0,
       tags: '',
+      customerCategory: '',
       customerPrices: []
     });
   };
@@ -747,6 +749,7 @@ export default function Inventory() {
     setFormData({
       ...item,
       tags: item.tags?.join(', ') || '',
+      customerCategory: item.customerCategory || '',
       customerPrices: item.customerPrices || []
     });
     setIsEditModalOpen(true);
@@ -1021,6 +1024,11 @@ export default function Inventory() {
                             <div>{item.category}</div>
                             {item.subCategory && (
                               <div className="text-sm text-gray-500">{item.subCategory}</div>
+                            )}
+                            {item.customerCategory && (
+                              <div className="text-xs text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded mt-1 inline-block">
+                                {item.customerCategory}
+                              </div>
                             )}
                           </div>
                         </TableCell>
