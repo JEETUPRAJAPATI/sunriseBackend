@@ -10,6 +10,7 @@ import DemoAccounts from "@/pages/DemoAccounts";
 import Dashboard from "@/pages/Dashboard";
 import UserManagement from "@/pages/UserManagement";
 import Inventory from "@/pages/Inventory";
+import Profile from "@/pages/Profile";
 import MainLayout from "@/components/layout/MainLayout";
 
 function ProtectedRoute({ component: Component, ...props }) {
