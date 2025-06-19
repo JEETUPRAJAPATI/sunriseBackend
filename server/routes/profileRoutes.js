@@ -1,5 +1,5 @@
 import express from 'express';
-import { auth } from '../middleware/auth.js';
+import { authenticateToken } from '../middleware/auth.js';
 import { 
   getProfile, 
   updateProfile, 
@@ -10,7 +10,7 @@ import {
 const router = express.Router();
 
 // All routes require authentication
-router.use(auth);
+router.use(authenticateToken);
 
 // GET /api/users/profile - Get current user's profile
 router.get('/profile', getProfile);
