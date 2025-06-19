@@ -66,6 +66,7 @@ app.use((req, res, next) => {
       
       const inventoryRoutes = (await import('./routes/inventoryRoutes.js')).default;
       app.use('/api', inventoryRoutes);
+app.use('/api/users', userRoutes);
       
       log("API routes registered successfully");
     } catch (error) {
