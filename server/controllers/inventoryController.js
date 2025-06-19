@@ -3,6 +3,10 @@ import { USER_ROLES } from '../../shared/schema.js';
 
 // Helper function to check inventory permissions
 const checkInventoryPermission = (user, action) => {
+  // Super User has all permissions
+  if (user.role === 'Super User') {
+    return true;
+  }
   return user.permissions?.Inventory?.[action] === true;
 };
 

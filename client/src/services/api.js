@@ -200,6 +200,72 @@ class ApiService {
   async updateNotificationSettings(notificationData) {
     return this.put('/settings/notifications', notificationData);
   }
+
+  // Inventory API methods
+  async getItems(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.get(`/items?${queryString}`);
+  }
+
+  async getItemById(id) {
+    return this.get(`/items/${id}`);
+  }
+
+  async createItem(itemData) {
+    return this.post('/items', itemData);
+  }
+
+  async updateItem(id, itemData) {
+    return this.put(`/items/${id}`, itemData);
+  }
+
+  async deleteItem(id) {
+    return this.delete(`/items/${id}`);
+  }
+
+  async adjustStock(id, adjustmentData) {
+    return this.post(`/items/${id}/adjust-stock`, adjustmentData);
+  }
+
+  async getCategories() {
+    return this.get('/categories');
+  }
+
+  async createCategory(categoryData) {
+    return this.post('/categories', categoryData);
+  }
+
+  async updateCategory(id, categoryData) {
+    return this.put(`/categories/${id}`, categoryData);
+  }
+
+  async deleteCategory(id) {
+    return this.delete(`/categories/${id}`);
+  }
+
+  async getCustomerCategories() {
+    return this.get('/customer-categories');
+  }
+
+  async createCustomerCategory(categoryData) {
+    return this.post('/customer-categories', categoryData);
+  }
+
+  async updateCustomerCategory(id, categoryData) {
+    return this.put(`/customer-categories/${id}`, categoryData);
+  }
+
+  async deleteCustomerCategory(id) {
+    return this.delete(`/customer-categories/${id}`);
+  }
+
+  async getLowStockItems() {
+    return this.get('/inventory/low-stock');
+  }
+
+  async getInventoryStats() {
+    return this.get('/inventory/stats');
+  }
 }
 
 export const api = new ApiService();
