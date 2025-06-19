@@ -1316,14 +1316,14 @@ export default function Inventory() {
                 <div>
                   <Label htmlFor="customerCategory">Customer Category</Label>
                   <Select 
-                    value={formData.customerCategory || ""} 
-                    onValueChange={(value) => handleInputChange('customerCategory', value === "" ? "" : value)}
+                    value={formData.customerCategory || "none"} 
+                    onValueChange={(value) => handleInputChange('customerCategory', value === "none" ? "" : value)}
                   >
                     <SelectTrigger className="mt-2">
                       <SelectValue placeholder="Select customer category" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No customer category</SelectItem>
+                      <SelectItem value="none">No customer category</SelectItem>
                       {customerCategories.map((category) => (
                         <SelectItem key={category._id} value={category.name}>
                           {category.name}
