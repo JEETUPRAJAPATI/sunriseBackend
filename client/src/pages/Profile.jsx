@@ -85,7 +85,10 @@ export default function Profile() {
   // Change password mutation
   const changePasswordMutation = useMutation({
     mutationFn: async (data) => {
-      return api.changePassword(data);
+      return api.changePassword({
+        oldPassword: data.currentPassword,
+        newPassword: data.newPassword
+      });
     },
     onSuccess: () => {
       toast({

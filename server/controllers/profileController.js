@@ -37,13 +37,21 @@ const upload = multer({
 // Get current user's profile
 export const getProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.userId).select('-password');
+    console.log('=== GET PROFILE ROUTE HIT ===');
+    console.log('User from request:', req.user);
+    
+    // Handle different user ID formats from auth middleware
+    const userId = req.user.userId?.userId || req.user.userId || req.user._id;
+    console.log('Looking for user ID:', userId);
+    
+    const user = await User.findById(userId).select('-password');
+    console.log('Found user:', user ? 'Yes' : 'No');
     
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    res.json({
+    const profileData = {
       id: user._id,
       username: user.username,
       email: user.email,
@@ -53,7 +61,10 @@ export const getProfile = async (req, res) => {
       unit: user.unit,
       permissions: user.permissions,
       profile: user.profile
-    });
+    };
+    
+    console.log('Returning profile data:', profileData);
+    res.json(profileData);
   } catch (error) {
     console.error('Get profile error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -81,8 +92,11 @@ export const updateProfile = async (req, res) => {
     if (fullName !== undefined) updateData.fullName = fullName;
     if (email !== undefined) updateData.email = email;
 
+    // Handle different user ID formats from auth middleware
+    const userId = req.user.userId?.userId || req.user.userId || req.user._id;
+    
     const user = await User.findByIdAndUpdate(
-      req.user.userId,
+      userId,
       updateData,
       { new: true, runValidators: true }
     ).select('-password');
@@ -137,7 +151,7 @@ export const changePassword = async (req, res) => {
     const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
 
     // Update password
-    await User.findByIdAndUpdate(req.user.userId, {
+    await User.findByIdAndUpdate(userId, {
       password: hashedNewPassword
     });
 
@@ -157,7 +171,9 @@ export const uploadProfilePicture = [
         return res.status(400).json({ message: 'No file uploaded' });
       }
 
-      const user = await User.findById(req.user.userId);
+      // Handle different user ID formats from auth middleware
+      const userId = req.user.userId?.userId || req.user.userId || req.user._id;
+      const user = await User.findById(userId);
       
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
@@ -173,7 +189,7 @@ export const uploadProfilePicture = [
 
       // Update user with new profile picture filename
       const updatedUser = await User.findByIdAndUpdate(
-        req.user.userId,
+        userId,
         { profilePicture: req.file.filename },
         { new: true }
       ).select('-password');
