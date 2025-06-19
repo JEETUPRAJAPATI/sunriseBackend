@@ -86,6 +86,9 @@ app.use('/uploads', express.static('uploads'));
       const authRoutes = (await import('./auth-routes.js')).default;
       app.use('/api', authRoutes);
       
+      const profileRoutes = (await import('./routes/profileRoutes.js')).default;
+      app.use('/api', profileRoutes);
+      
       const inventoryRoutes = (await import('./routes/inventoryRoutes.js')).default;
       app.use('/api', inventoryRoutes);
       

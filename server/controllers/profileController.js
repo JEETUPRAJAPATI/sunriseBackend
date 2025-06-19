@@ -152,9 +152,6 @@ export const changePassword = async (req, res) => {
     // Hash new password
     const saltRounds = 10;
     const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
-
-    // Handle different user ID formats from auth middleware
-    const userId = req.user.userId?.userId || req.user.userId || req.user._id;
     
     // Update password
     await User.findByIdAndUpdate(userId, {

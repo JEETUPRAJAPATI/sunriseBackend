@@ -13,15 +13,15 @@ const router = express.Router();
 router.use(authenticateToken);
 
 // GET /api/users/profile - Get current user's profile
-router.get('/profile', getProfile);
+router.get('/users/profile', getProfile);
 
 // PUT /api/users/profile - Update profile (fullName, email)
-router.put('/profile', updateProfile);
+router.put('/users/profile', updateProfile);
 
 // PUT /api/users/profile/password - Change password
-router.put('/profile/password', changePassword);
+router.put('/users/profile/password', changePassword);
 
 // POST /api/users/profile/picture - Upload profile picture
-router.post('/profile/picture', uploadProfilePicture);
+router.post('/users/profile/picture', uploadProfilePicture);
 
 export default router;
