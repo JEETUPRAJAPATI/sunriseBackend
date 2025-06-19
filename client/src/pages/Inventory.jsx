@@ -170,13 +170,16 @@ function CategoryManagement() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Add New Category */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Add New Category</CardTitle>
+      <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/10 dark:to-indigo-900/10">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-3 text-xl font-bold text-blue-900 dark:text-blue-100">
+            <Plus className="h-6 w-6 text-blue-600" />
+            Create New Category
+          </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
           <div>
             <Label htmlFor="category-name">Category Name</Label>
             <Input
@@ -222,19 +225,36 @@ function CategoryManagement() {
           <Button
             onClick={() => createCategoryMutation.mutate(newCategory)}
             disabled={!newCategory.name.trim() || createCategoryMutation.isPending}
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200 px-8"
           >
-            {createCategoryMutation.isPending ? 'Creating...' : 'Create Category'}
+            {createCategoryMutation.isPending ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                Creating...
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Create Category
+              </div>
+            )}
           </Button>
         </CardContent>
       </Card>
 
       {/* Existing Categories */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Existing Categories</CardTitle>
+      <Card className="border-0 shadow-lg">
+        <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-t-lg">
+          <CardTitle className="flex items-center gap-3 text-xl font-bold">
+            <FolderOpen className="h-6 w-6 text-purple-600" />
+            Existing Categories
+            <Badge variant="secondary" className="ml-2">
+              {categories.length} categories
+            </Badge>
+          </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
+        <CardContent className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {categories.map((category) => (
               <div key={category._id} className="border rounded-lg p-4">
                 {editingCategory?._id === category._id ? (
@@ -1072,27 +1092,34 @@ export default function Inventory() {
         </CardContent>
       </Card>
 
-      {/* Category Management Modal */}
+      {/* Enhanced Category Management Modal */}
       <Dialog open={isCategoryModalOpen} onOpenChange={setIsCategoryModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Category Management</DialogTitle>
-            <DialogDescription>
-              Manage product categories and customer categories
+        <DialogContent className="max-w-6xl max-h-[85vh] overflow-y-auto border-0 shadow-2xl bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
+          <DialogHeader className="pb-6">
+            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent flex items-center gap-3">
+              <FolderOpen className="h-7 w-7 text-blue-600" />
+              Category Management
+            </DialogTitle>
+            <DialogDescription className="text-gray-600 dark:text-gray-300 text-base">
+              Organize your inventory with product categories and customer classifications
             </DialogDescription>
           </DialogHeader>
           
           <Tabs defaultValue="categories" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="categories">Product Categories</TabsTrigger>
-              <TabsTrigger value="customer-categories">Customer Categories</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl">
+              <TabsTrigger value="categories" className="rounded-lg font-semibold data-[state=active]:bg-white data-[state=active]:shadow-md dark:data-[state=active]:bg-gray-700">
+                Product Categories
+              </TabsTrigger>
+              <TabsTrigger value="customer-categories" className="rounded-lg font-semibold data-[state=active]:bg-white data-[state=active]:shadow-md dark:data-[state=active]:bg-gray-700">
+                Customer Categories
+              </TabsTrigger>
             </TabsList>
             
-            <TabsContent value="categories" className="space-y-4">
+            <TabsContent value="categories" className="space-y-6 mt-6">
               <CategoryManagement />
             </TabsContent>
             
-            <TabsContent value="customer-categories" className="space-y-4">
+            <TabsContent value="customer-categories" className="space-y-6 mt-6">
               <CustomerCategoryManagement />
             </TabsContent>
           </Tabs>
