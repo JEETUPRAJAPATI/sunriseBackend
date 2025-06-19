@@ -16,13 +16,11 @@ import {
   DollarSign,
   Users,
   Calendar,
-  Clock
+  TrendingUp
 } from 'lucide-react';
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const [dailyTimer, setDailyTimer] = useState(0);
-  const [isTimerRunning, setIsTimerRunning] = useState(true);
 
   const { data: metricsData, isLoading } = useQuery({
     queryKey: ['/api/dashboard/metrics'],
@@ -30,17 +28,6 @@ export default function Dashboard() {
   });
 
   const metrics = metricsData?.metrics || {};
-
-  // Auto-timer functionality
-  React.useEffect(() => {
-    let interval;
-    if (isTimerRunning) {
-      interval = setInterval(() => {
-        setDailyTimer(prev => prev + 1);
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isTimerRunning]);
 
   // Live clock functionality
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -51,13 +38,7 @@ export default function Dashboard() {
     return () => clearInterval(clockInterval);
   }, []);
 
-  // Format timer display
-  const formatTime = (seconds) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
+
 
   return (
     <div className="space-y-6">
@@ -134,62 +115,14 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        {/* Timer Section - 3 columns */}
-        <div className="col-span-12 md:col-span-3">
-          <Card className="h-full bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center text-lg text-green-700 dark:text-green-300">
-                <Clock className="w-5 h-5 mr-2" />
-                Work Timer
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="text-center">
-                  <div className="text-3xl font-mono font-bold text-slate-900 dark:text-slate-100 mb-2">
-                    {formatTime(dailyTimer)}
-                  </div>
-                  <div className="text-sm text-green-600 dark:text-green-400">
-                    {isTimerRunning ? 'Active Session' : 'Paused'}
-                  </div>
-                </div>
-                
-                <div className="flex space-x-2">
-                  <Button 
-                    onClick={() => setIsTimerRunning(!isTimerRunning)}
-                    variant={isTimerRunning ? "destructive" : "default"}
-                    size="sm" 
-                    className="flex-1"
-                  >
-                    {isTimerRunning ? 'Pause' : 'Resume'}
-                  </Button>
-                  <Button 
-                    onClick={() => setDailyTimer(0)}
-                    variant="outline"
-                    size="sm"
-                    className="px-3"
-                  >
-                    Reset
-                  </Button>
-                </div>
-                
-                <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                  <span>Started: 9:00 AM</span>
-                  <div className="flex items-center space-x-1">
-                    <div className={`w-2 h-2 rounded-full ${isTimerRunning ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
-                    <span>{isTimerRunning ? 'Live' : 'Idle'}</span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+
       </div>
+
       {/* Analytics Overview */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Analytics Overview</h2>
         <Button variant="outline">
-          <Clock className="w-4 h-4 mr-2" />
+          <TrendingUp className="w-4 h-4 mr-2" />
           Last 30 days
         </Button>
       </div>
