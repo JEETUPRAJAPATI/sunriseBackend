@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { createServer } from "http";
 import cookieParser from "cookie-parser";
+import cors from "cors";
 import { setupVite, serveStatic, log } from "./vite";
 
 // Import ES modules
@@ -64,6 +65,10 @@ app.use('/uploads', express.static('uploads'));
     const server = createServer(app);
 
     // STEP 1: Add middleware
+    app.use(cors({
+      origin: ['http://localhost:5000', 'https://3119338b-e714-42ee-ad89-db926ce8b72e-00-19uqh907sthf1.kirk.replit.dev'],
+      credentials: true
+    }));
     app.use(express.json());
     app.use(cookieParser());
     
