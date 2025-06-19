@@ -256,7 +256,7 @@ function CategoryManagement() {
         <CardContent className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {categories.map((category) => (
-              <div key={category._id} className="border rounded-lg p-4">
+              <div key={category._id} className="group relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
                 {editingCategory?._id === category._id ? (
                   <div className="space-y-4">
                     <Input
