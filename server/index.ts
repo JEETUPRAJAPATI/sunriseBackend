@@ -6,6 +6,7 @@ import { setupVite, serveStatic, log } from "./vite";
 // Import ES modules
 import connectDB from "./config/database.js";
 import createSeedUsers from "./seed/seedUsers.js";
+import { seedInventoryData } from "./seed/seedInventory.js";
 
 const app = express();
 // Basic middleware - JSON parsing will be handled by API router
@@ -48,6 +49,9 @@ app.use((req, res, next) => {
     // Create seed users after database connection
     await createSeedUsers();
     
+    // Seed inventory data
+    await seedInventoryData();
+    
     // Create HTTP server first
     const server = createServer(app);
 
@@ -59,9 +63,13 @@ app.use((req, res, next) => {
     try {
       const authRoutes = (await import('./auth-routes.js')).default;
       app.use('/api', authRoutes);
+      
+      const inventoryRoutes = (await import('./routes/inventoryRoutes.js')).default;
+      app.use('/api', inventoryRoutes);
+      
       log("API routes registered successfully");
     } catch (error) {
-      log(`Error importing auth routes: ${error.message}`);
+      log(`Error importing routes: ${error.message}`);
       throw error;
     }
 

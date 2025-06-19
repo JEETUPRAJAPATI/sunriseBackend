@@ -74,44 +74,63 @@ function CategoryManagement() {
 
   const createCategoryMutation = useMutation({
     mutationFn: async (categoryData) => {
-      const response = await api.post('/api/categories', {
+      const response = await api.createCategory({
         ...categoryData,
         subCategories: categoryData.subCategories.filter(sub => sub.trim())
       });
-      return response.data;
+      return response;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
       setNewCategory({ name: '', subCategories: [''] });
+      // Show success message if available
+      if (data?.message) {
+        console.log('Success:', data.message);
+      }
+    },
+    onError: (error) => {
+      console.error('Category creation failed:', error);
     }
   });
 
   const updateCategoryMutation = useMutation({
     mutationFn: async ({ id, data }) => {
-      const response = await api.put(`/api/categories/${id}`, {
+      const response = await api.updateCategory(id, {
         ...data,
         subCategories: data.subCategories.filter(sub => sub.trim())
       });
-      return response.data;
+      return response;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
       setEditingCategory(null);
+      if (data?.message) {
+        console.log('Success:', data.message);
+      }
+    },
+    onError: (error) => {
+      console.error('Category update failed:', error);
     }
   });
 
   const deleteCategoryMutation = useMutation({
     mutationFn: async (id) => {
-      const response = await api.delete(`/api/categories/${id}`);
-      return response.data;
+      const response = await api.deleteCategory(id);
+      return response;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
+      if (data?.message) {
+        console.log('Success:', data.message);
+      }
+    },
+    onError: (error) => {
+      console.error('Category deletion failed:', error);
     }
   });
 
-  const handleAddSubCategory = (category) => {
-    if (editingCategory?._id === category._id) {
+  const handleAddSubCategory = (category = null) => {
+    if (category && editingCategory?._id === category._id) {
       setEditingCategory({
         ...editingCategory,
         subCategories: [...editingCategory.subCategories, '']
@@ -124,8 +143,8 @@ function CategoryManagement() {
     }
   };
 
-  const handleRemoveSubCategory = (index, category) => {
-    if (editingCategory?._id === category._id) {
+  const handleRemoveSubCategory = (index, category = null) => {
+    if (category && editingCategory?._id === category._id) {
       setEditingCategory({
         ...editingCategory,
         subCategories: editingCategory.subCategories.filter((_, i) => i !== index)
@@ -138,8 +157,8 @@ function CategoryManagement() {
     }
   };
 
-  const handleSubCategoryChange = (index, value, category) => {
-    if (editingCategory?._id === category._id) {
+  const handleSubCategoryChange = (index, value, category = null) => {
+    if (category && editingCategory?._id === category._id) {
       const updated = [...editingCategory.subCategories];
       updated[index] = value;
       setEditingCategory({ ...editingCategory, subCategories: updated });
@@ -340,33 +359,51 @@ function CustomerCategoryManagement() {
 
   const createCustomerCategoryMutation = useMutation({
     mutationFn: async (categoryData) => {
-      const response = await api.post('/api/customer-categories', categoryData);
-      return response.data;
+      const response = await api.createCustomerCategory(categoryData);
+      return response;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/customer-categories'] });
       setNewCustomerCategory({ name: '', description: '' });
+      if (data?.message) {
+        console.log('Success:', data.message);
+      }
+    },
+    onError: (error) => {
+      console.error('Customer category creation failed:', error);
     }
   });
 
   const updateCustomerCategoryMutation = useMutation({
     mutationFn: async ({ id, data }) => {
-      const response = await api.put(`/api/customer-categories/${id}`, data);
-      return response.data;
+      const response = await api.updateCustomerCategory(id, data);
+      return response;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/customer-categories'] });
       setEditingCustomerCategory(null);
+      if (data?.message) {
+        console.log('Success:', data.message);
+      }
+    },
+    onError: (error) => {
+      console.error('Customer category update failed:', error);
     }
   });
 
   const deleteCustomerCategoryMutation = useMutation({
     mutationFn: async (id) => {
-      const response = await api.delete(`/api/customer-categories/${id}`);
-      return response.data;
+      const response = await api.deleteCustomerCategory(id);
+      return response;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/customer-categories'] });
+      if (data?.message) {
+        console.log('Success:', data.message);
+      }
+    },
+    onError: (error) => {
+      console.error('Customer category deletion failed:', error);
     }
   });
 
@@ -593,39 +630,57 @@ export default function Inventory() {
   // Mutations
   const createItemMutation = useMutation({
     mutationFn: async (itemData) => {
-      const response = await api.post('/api/items', itemData);
-      return response.data;
+      const response = await api.createItem(itemData);
+      return response;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/items'] });
       queryClient.invalidateQueries({ queryKey: ['/api/inventory/stats'] });
       setIsAddModalOpen(false);
       resetForm();
+      if (data?.message) {
+        console.log('Success:', data.message);
+      }
+    },
+    onError: (error) => {
+      console.error('Item creation failed:', error);
     }
   });
 
   const updateItemMutation = useMutation({
     mutationFn: async ({ id, data }) => {
-      const response = await api.put(`/api/items/${id}`, data);
-      return response.data;
+      const response = await api.updateItem(id, data);
+      return response;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/items'] });
       queryClient.invalidateQueries({ queryKey: ['/api/inventory/stats'] });
       setIsEditModalOpen(false);
       setSelectedItem(null);
       resetForm();
+      if (data?.message) {
+        console.log('Success:', data.message);
+      }
+    },
+    onError: (error) => {
+      console.error('Item update failed:', error);
     }
   });
 
   const deleteItemMutation = useMutation({
     mutationFn: async (id) => {
-      const response = await api.delete(`/api/items/${id}`);
-      return response.data;
+      const response = await api.deleteItem(id);
+      return response;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/items'] });
       queryClient.invalidateQueries({ queryKey: ['/api/inventory/stats'] });
+      if (data?.message) {
+        console.log('Success:', data.message);
+      }
+    },
+    onError: (error) => {
+      console.error('Item deletion failed:', error);
     }
   });
 

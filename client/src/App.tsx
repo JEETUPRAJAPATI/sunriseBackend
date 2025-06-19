@@ -9,6 +9,7 @@ import NotFound from "@/pages/not-found";
 import DemoAccounts from "@/pages/DemoAccounts";
 import Dashboard from "@/pages/Dashboard";
 import UserManagement from "@/pages/UserManagement";
+import Inventory from "@/pages/Inventory";
 import MainLayout from "@/components/layout/MainLayout";
 
 function ProtectedRoute({ component: Component, ...props }) {
@@ -40,6 +41,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/user-management" component={() => <ProtectedRoute component={UserManagement} />} />
+      <Route path="/inventory" component={() => <ProtectedRoute component={Inventory} />} />
       <Route path="/dashboard" component={() => <ProtectedRoute component={Dashboard} />} />
       <Route path="/" component={() => <ProtectedRoute component={Dashboard} />} />
       <Route component={NotFound} />
