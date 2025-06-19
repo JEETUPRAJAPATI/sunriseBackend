@@ -1295,20 +1295,42 @@ export default function Inventory() {
             
             {/* Type and Pricing */}
             <div className="space-y-4">
-              <div>
-                <Label>Item Type</Label>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {ITEM_TYPES.map(type => (
-                    <Button
-                      key={type}
-                      type="button"
-                      variant={formData.type === type ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => handleInputChange('type', type)}
-                    >
-                      {type}
-                    </Button>
-                  ))}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Item Type</Label>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {ITEM_TYPES.map(type => (
+                      <Button
+                        key={type}
+                        type="button"
+                        variant={formData.type === type ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handleInputChange('type', type)}
+                      >
+                        {type}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+                
+                <div>
+                  <Label htmlFor="customerCategory">Customer Category</Label>
+                  <Select 
+                    value={formData.customerCategory || ""} 
+                    onValueChange={(value) => handleInputChange('customerCategory', value === "" ? "" : value)}
+                  >
+                    <SelectTrigger className="mt-2">
+                      <SelectValue placeholder="Select customer category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">No customer category</SelectItem>
+                      {customerCategories.map((category) => (
+                        <SelectItem key={category._id} value={category.name}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               
