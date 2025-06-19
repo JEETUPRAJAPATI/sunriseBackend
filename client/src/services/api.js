@@ -266,6 +266,38 @@ class ApiService {
   async getInventoryStats() {
     return this.get('/inventory/stats');
   }
+
+  // Profile Management
+  async getProfile() {
+    return this.get('/api/users/profile');
+  }
+
+  async updateProfile(data) {
+    return this.put('/api/users/profile', data);
+  }
+
+  async changePassword(data) {
+    return this.put('/api/users/profile/password', data);
+  }
+
+  async uploadProfilePicture(file) {
+    const formData = new FormData();
+    formData.append('picture', file);
+    
+    const response = await fetch('/api/users/profile/picture', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: formData
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
+  }
 }
 
 export const api = new ApiService();

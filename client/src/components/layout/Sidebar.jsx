@@ -87,6 +87,14 @@ const menuItems = [
   }
 ];
 
+// Profile menu item (always available)
+const profileMenuItem = {
+  label: 'Profile',
+  path: '/profile',
+  icon: Shield,
+  module: null // Always accessible
+};
+
 export default function Sidebar({ isOpen, onClose }) {
   const [location] = useLocation();
   const { user, logout } = useAuth();
@@ -176,23 +184,52 @@ export default function Sidebar({ isOpen, onClose }) {
                 );
               })}
 
+              {/* Profile - Always available */}
+              <Separator className="my-4" />
+              <Link href="/profile">
+                <Button
+                  variant={location === '/profile' ? "default" : "ghost"}
+                  className={cn(
+                    "w-full justify-start h-12 px-4 transition-all duration-200 group relative overflow-hidden",
+                    location === '/profile'
+                      ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+                      : "text-slate-700 dark:text-slate-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 hover:text-slate-900 dark:hover:text-slate-100"
+                  )}
+                  onClick={onClose}
+                >
+                  <Shield className={cn(
+                    "w-5 h-5 mr-3 transition-all duration-200",
+                    location === '/profile' ? "drop-shadow-sm" : "group-hover:scale-110"
+                  )} />
+                  <span className="font-medium">Profile</span>
+                  {location === '/profile' && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-50" />
+                  )}
+                </Button>
+              </Link>
+
               {/* Super User Only Items */}
               {user?.role === 'Super User' && (
                 <>
-                  <Separator className="my-4" />
                   <Link href="/user-management">
                     <Button
                       variant={location === '/user-management' ? "default" : "ghost"}
                       className={cn(
-                        "w-full justify-start h-10 px-4",
+                        "w-full justify-start h-12 px-4 transition-all duration-200 group relative overflow-hidden",
                         location === '/user-management'
-                          ? "bg-primary text-primary-foreground shadow-sm"
-                          : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                          ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+                          : "text-slate-700 dark:text-slate-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 hover:text-slate-900 dark:hover:text-slate-100"
                       )}
                       onClick={onClose}
                     >
-                      <Shield className="w-5 h-5 mr-3" />
-                      <span>User Management</span>
+                      <Shield className={cn(
+                        "w-5 h-5 mr-3 transition-all duration-200",
+                        location === '/user-management' ? "drop-shadow-sm" : "group-hover:scale-110"
+                      )} />
+                      <span className="font-medium">User Management</span>
+                      {location === '/user-management' && (
+                        <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-50" />
+                      )}
                     </Button>
                   </Link>
                   

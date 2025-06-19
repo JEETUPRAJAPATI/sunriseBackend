@@ -1101,34 +1101,30 @@ export default function Inventory() {
         </CardContent>
       </Card>
 
-      {/* Enhanced Category Management Modal */}
+      {/* Category Management Modal - Clean Design */}
       <Dialog open={isCategoryModalOpen} onOpenChange={setIsCategoryModalOpen}>
-        <DialogContent className="max-w-6xl max-h-[85vh] overflow-y-auto border-0 shadow-2xl bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
-          <DialogHeader className="pb-6">
-            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent flex items-center gap-3">
-              <FolderOpen className="h-7 w-7 text-blue-600" />
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="pb-4 border-b">
+            <DialogTitle className="text-xl font-semibold flex items-center gap-2">
+              <FolderOpen className="h-5 w-5 text-blue-600" />
               Category Management
             </DialogTitle>
-            <DialogDescription className="text-gray-600 dark:text-gray-300 text-base">
+            <DialogDescription>
               Organize your inventory with product categories and customer classifications
             </DialogDescription>
           </DialogHeader>
           
-          <Tabs defaultValue="categories" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl">
-              <TabsTrigger value="categories" className="rounded-lg font-semibold data-[state=active]:bg-white data-[state=active]:shadow-md dark:data-[state=active]:bg-gray-700">
-                Product Categories
-              </TabsTrigger>
-              <TabsTrigger value="customer-categories" className="rounded-lg font-semibold data-[state=active]:bg-white data-[state=active]:shadow-md dark:data-[state=active]:bg-gray-700">
-                Customer Categories
-              </TabsTrigger>
+          <Tabs defaultValue="categories" className="w-full mt-4">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="categories">Product Categories</TabsTrigger>
+              <TabsTrigger value="customer-categories">Customer Categories</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="categories" className="space-y-6 mt-6">
+            <TabsContent value="categories" className="mt-4">
               <CategoryManagement />
             </TabsContent>
             
-            <TabsContent value="customer-categories" className="space-y-6 mt-6">
+            <TabsContent value="customer-categories" className="mt-4">
               <CustomerCategoryManagement />
             </TabsContent>
           </Tabs>

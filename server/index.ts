@@ -41,6 +41,14 @@ app.use((req, res, next) => {
   next();
 });
 
+// Add body parsing and static file serving
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser());
+
+// Serve static files for profile pictures
+app.use('/uploads', express.static('uploads'));
+
 (async () => {
   try {
     // Connect to MongoDB
