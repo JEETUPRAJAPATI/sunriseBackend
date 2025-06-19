@@ -1,4 +1,4 @@
-const API_BASE_URL = '/api';
+const API_BASE_URL = "/api";
 
 class ApiService {
   constructor() {
@@ -6,15 +6,18 @@ class ApiService {
   }
 
   async request(method, url, data = null) {
-    console.log(`API Request: ${method} ${this.baseURL}${url}`, data || '(no data)');
-    
+    console.log(
+      `API Request: ${method} ${this.baseURL}${url}`,
+      data || "(no data)",
+    );
+
     const config = {
       method,
       headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
+        "Content-Type": "application/json",
+        Accept: "application/json",
       },
-      credentials: 'include',
+      credentials: "include",
     };
 
     if (data) {
@@ -23,70 +26,74 @@ class ApiService {
 
     try {
       const response = await fetch(`${this.baseURL}${url}`, config);
-      
+
       console.log(`API Response: ${response.status} ${response.statusText}`);
-      console.log('Content-Type:', response.headers.get('content-type'));
-      
+      console.log("Content-Type:", response.headers.get("content-type"));
+
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('API Error Response:', errorText);
-        
+        console.error("API Error Response:", errorText);
+
         let errorData;
         try {
           errorData = JSON.parse(errorText);
         } catch {
-          errorData = { message: `HTTP error! status: ${response.status}`, details: errorText };
+          errorData = {
+            message: `HTTP error! status: ${response.status}`,
+            details: errorText,
+          };
         }
-        
-        const errorMessage = errorData.message || `HTTP error! status: ${response.status}`;
-        console.error('API Error:', errorMessage, errorData);
+
+        const errorMessage =
+          errorData.message || `HTTP error! status: ${response.status}`;
+        console.error("API Error:", errorMessage, errorData);
         throw new Error(errorMessage);
       }
 
       const responseData = await response.json();
-      console.log('API Response:', responseData);
+      console.log("API Response:", responseData);
       return responseData;
     } catch (error) {
-      console.error('API Request Error:', error);
+      console.error("API Request Error:", error);
       throw error;
     }
   }
 
   async get(url) {
-    return this.request('GET', url);
+    return this.request("GET", url);
   }
 
   async post(url, data) {
-    return this.request('POST', url, data);
+    return this.request("POST", url, data);
   }
 
   async put(url, data) {
-    return this.request('PUT', url, data);
+    return this.request("PUT", url, data);
   }
 
   async patch(url, data) {
-    return this.request('PATCH', url, data);
+    return this.request("PATCH", url, data);
   }
 
   async delete(url) {
-    return this.request('DELETE', url);
+    return this.request("DELETE", url);
   }
 
   // Authentication methods
   async login(credentials) {
-    return this.post('/auth/login', credentials);
+    return this.post("/auth/login", credentials);
   }
 
   async logout() {
-    return this.post('/auth/logout');
+    return this.post("/auth/logout");
   }
 
   async getCurrentUser() {
     try {
-      const response = await this.get('/auth/me');
+      const response = await this.get("/auth/me");
       return response;
     } catch (error) {
-      if (error.message.includes('401')) {
+      if (error.message.includes("401")) {
         // User is not authenticated
         return null;
       }
@@ -95,13 +102,13 @@ class ApiService {
   }
 
   async changePassword(passwordData) {
-    return this.post('/auth/change-password', passwordData);
+    return this.post("/auth/change-password", passwordData);
   }
 
   // User management
   async getUsers(params = {}) {
     const queryString = new URLSearchParams(params).toString();
-    return this.get(`/users${queryString ? `?${queryString}` : ''}`);
+    return this.get(`/users${queryString ? `?${queryString}` : ""}`);
   }
 
   async getUserById(id) {
@@ -109,7 +116,7 @@ class ApiService {
   }
 
   async createUser(userData) {
-    return this.post('/users', userData);
+    return this.post("/users", userData);
   }
 
   async updateUser(id, userData) {
@@ -127,33 +134,41 @@ class ApiService {
   // Dashboard
   async getDashboardMetrics(params = {}) {
     const queryString = new URLSearchParams(params).toString();
-    return this.get(`/dashboard/metrics${queryString ? `?${queryString}` : ''}`);
+    return this.get(
+      `/dashboard/metrics${queryString ? `?${queryString}` : ""}`,
+    );
   }
 
   async getProductionChart(params = {}) {
     const queryString = new URLSearchParams(params).toString();
-    return this.get(`/dashboard/production-chart${queryString ? `?${queryString}` : ''}`);
+    return this.get(
+      `/dashboard/production-chart${queryString ? `?${queryString}` : ""}`,
+    );
   }
 
   async getSalesChart(params = {}) {
     const queryString = new URLSearchParams(params).toString();
-    return this.get(`/dashboard/sales-chart${queryString ? `?${queryString}` : ''}`);
+    return this.get(
+      `/dashboard/sales-chart${queryString ? `?${queryString}` : ""}`,
+    );
   }
 
   async getRecentOrders(params = {}) {
     const queryString = new URLSearchParams(params).toString();
-    return this.get(`/dashboard/recent-orders${queryString ? `?${queryString}` : ''}`);
+    return this.get(
+      `/dashboard/recent-orders${queryString ? `?${queryString}` : ""}`,
+    );
   }
 
   async getAlerts(params = {}) {
     const queryString = new URLSearchParams(params).toString();
-    return this.get(`/dashboard/alerts${queryString ? `?${queryString}` : ''}`);
+    return this.get(`/dashboard/alerts${queryString ? `?${queryString}` : ""}`);
   }
 
   // Orders
   async getOrders(params = {}) {
     const queryString = new URLSearchParams(params).toString();
-    return this.get(`/orders${queryString ? `?${queryString}` : ''}`);
+    return this.get(`/orders${queryString ? `?${queryString}` : ""}`);
   }
 
   async getOrderById(id) {
@@ -161,7 +176,7 @@ class ApiService {
   }
 
   async createOrder(orderData) {
-    return this.post('/orders', orderData);
+    return this.post("/orders", orderData);
   }
 
   async updateOrder(id, orderData) {
@@ -174,31 +189,31 @@ class ApiService {
 
   // Settings
   async getSettings() {
-    return this.get('/settings');
+    return this.get("/settings");
   }
 
   async updateSettings(settingsData) {
-    return this.put('/settings', settingsData);
+    return this.put("/settings", settingsData);
   }
 
   async updateCompanySettings(companyData) {
-    return this.put('/settings/company', companyData);
+    return this.put("/settings/company", companyData);
   }
 
   async updateSystemSettings(systemData) {
-    return this.put('/settings/system', systemData);
+    return this.put("/settings/system", systemData);
   }
 
   async updateEmailSettings(emailData) {
-    return this.put('/settings/email', emailData);
+    return this.put("/settings/email", emailData);
   }
 
   async updateModuleSettings(moduleData) {
-    return this.put('/settings/modules', moduleData);
+    return this.put("/settings/modules", moduleData);
   }
 
   async updateNotificationSettings(notificationData) {
-    return this.put('/settings/notifications', notificationData);
+    return this.put("/settings/notifications", notificationData);
   }
 
   // Inventory API methods
@@ -212,7 +227,7 @@ class ApiService {
   }
 
   async createItem(itemData) {
-    return this.post('/items', itemData);
+    return this.post("/items", itemData);
   }
 
   async updateItem(id, itemData) {
@@ -228,11 +243,11 @@ class ApiService {
   }
 
   async getCategories() {
-    return this.get('/categories');
+    return this.get("/categories");
   }
 
   async createCategory(categoryData) {
-    return this.post('/categories', categoryData);
+    return this.post("/categories", categoryData);
   }
 
   async updateCategory(id, categoryData) {
@@ -244,11 +259,11 @@ class ApiService {
   }
 
   async getCustomerCategories() {
-    return this.get('/customer-categories');
+    return this.get("/customer-categories");
   }
 
   async createCustomerCategory(categoryData) {
-    return this.post('/customer-categories', categoryData);
+    return this.post("/customer-categories", categoryData);
   }
 
   async updateCustomerCategory(id, categoryData) {
@@ -260,36 +275,36 @@ class ApiService {
   }
 
   async getLowStockItems() {
-    return this.get('/inventory/low-stock');
+    return this.get("/inventory/low-stock");
   }
 
   async getInventoryStats() {
-    return this.get('/inventory/stats');
+    return this.get("/inventory/stats");
   }
 
   // Profile Management
   async getProfile() {
-    return this.get('/api/users/profile');
+    return this.get("/users/profile");
   }
 
   async updateProfile(data) {
-    return this.put('/api/users/profile', data);
+    return this.put("/users/profile", data);
   }
 
   async changePassword(data) {
-    return this.put('/api/users/profile/password', data);
+    return this.put("/users/profile/password", data);
   }
 
   async uploadProfilePicture(file) {
     const formData = new FormData();
-    formData.append('picture', file);
-    
-    const response = await fetch('/api/users/profile/picture', {
-      method: 'POST',
+    formData.append("picture", file);
+
+    const response = await fetch("/users/profile/picture", {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
       },
-      body: formData
+      body: formData,
     });
 
     if (!response.ok) {
