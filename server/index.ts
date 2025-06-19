@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { createServer } from "http";
 import cookieParser from "cookie-parser";
 import cors from "cors";
+import path from "path";
 import { setupVite, serveStatic, log } from "./vite";
 
 // Import ES modules
@@ -74,6 +75,11 @@ app.use('/uploads', express.static('uploads'));
     
     // Static file serving for uploaded images
     app.use('/uploads', express.static('uploads'));
+    
+    // Serve test file for debugging
+    app.get('/test-profile', (req, res) => {
+      res.sendFile(path.join(process.cwd(), 'test-profile.html'));
+    });
 
     // STEP 2: Register API routes DIRECTLY
     try {
