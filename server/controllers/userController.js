@@ -139,7 +139,7 @@ export const createUser = async (req, res) => {
 export const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const { fullName, role, unit, permissions, isActive } = req.body;
+    const { username, email, fullName, role, unit, permissions, isActive } = req.body;
 
     const user = await User.findById(id);
 
