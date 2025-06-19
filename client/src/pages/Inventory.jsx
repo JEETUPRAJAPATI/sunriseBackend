@@ -52,7 +52,8 @@ import {
   BarChart3,
   Settings,
   Eye,
-  X
+  X,
+  FolderOpen
 } from 'lucide-react';
 
 const ITEM_TYPES = ['Product', 'Material', 'Spares', 'Assemblies'];
