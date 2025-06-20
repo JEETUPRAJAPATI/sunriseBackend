@@ -189,9 +189,13 @@ export const createItem = async (req, res) => {
 
     // Sanitize and prepare data
     const sanitizedData = sanitizeItemData(itemData);
+    console.log('Sanitized data:', sanitizedData);
+    
     const item = await Item.create(sanitizedData);
+    console.log('Item saved successfully:', item);
 
     res.status(201).json({
+      success: true,
       message: 'Item created successfully',
       item
     });

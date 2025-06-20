@@ -13,7 +13,7 @@ import Manufacturing from "@/pages/Manufacturing";
 import Dispatches from "@/pages/Dispatches";
 import Sales from "@/pages/Sales";
 import Accounts from "@/pages/Accounts";
-import Inventory from "@/pages/Inventory";
+import ModernInventoryUI from "@/components/inventory/ModernInventoryUI";
 import Customers from "@/pages/Customers";
 import Suppliers from "@/pages/Suppliers";
 import Purchases from "@/pages/Purchases";
@@ -81,7 +81,7 @@ function Router() {
       </Route>
       <Route path="/inventory">
         <ProtectedRoute>
-          <Inventory />
+          <ModernInventoryUI />
         </ProtectedRoute>
       </Route>
       <Route path="/customers">
