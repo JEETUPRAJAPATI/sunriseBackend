@@ -340,203 +340,173 @@ export default function ModernInventoryUI() {
         </CardContent>
       </Card>
 
-      {/* Main Content Tabs */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Navigation Buttons */}
-        <div className="lg:col-span-1 space-y-2">
-          <Button 
-            variant="ghost" 
-            className="w-full justify-start text-left h-12 bg-blue-600 text-white hover:bg-blue-700"
-          >
-            <Package className="h-5 w-5 mr-3" />
-            Inventory Items
-          </Button>
-          <Button 
-            variant="ghost" 
-            className="w-full justify-start text-left h-12 hover:bg-blue-50 dark:hover:bg-blue-950/30"
-          >
-            <Tag className="h-5 w-5 mr-3" />
-            Categories
-          </Button>
-          <Button 
-            variant="ghost" 
-            className="w-full justify-start text-left h-12 hover:bg-green-50 dark:hover:bg-green-950/30"
-          >
-            <Users className="h-5 w-5 mr-3" />
-            Customer Categories
-          </Button>
-        </div>
-
-        {/* Content Area */}
-        <div className="lg:col-span-3">
-          <Card className="shadow-sm border-gray-200 dark:border-gray-700">
-            <CardHeader className="bg-gray-50 dark:bg-gray-800/50">
-              <CardTitle className="flex items-center gap-2 text-gray-800 dark:text-gray-200">
-                <Package className="h-5 w-5" />
-                Inventory Management
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="space-y-6">
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                      placeholder="Search items by name, code, or description..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 w-full border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400"
-                    />
-                  </div>
-                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                    <SelectTrigger className="w-[200px] border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400">
-                      <Filter className="h-4 w-4 mr-2 text-gray-400" />
-                      <SelectValue placeholder="All Categories" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">
-                        <div className="flex items-center gap-2">
-                          <Package2 className="h-4 w-4" />
-                          All Categories
-                        </div>
-                      </SelectItem>
-                      {categories.length > 0 && categories.map((category) => (
-                        <SelectItem key={category._id || category.name} value={category.name}>
-                          <div className="flex items-center gap-2">
-                            <Tag className="h-4 w-4" />
-                            {category.name}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={sortBy} onValueChange={setSortBy}>
-                    <SelectTrigger className="w-[150px] border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400">
-                      <BarChart3 className="h-4 w-4 mr-2 text-gray-400" />
-                      <SelectValue placeholder="Sort by" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="name">Name A-Z</SelectItem>
-                      <SelectItem value="code">Code</SelectItem>
-                      <SelectItem value="category">Category</SelectItem>
-                      <SelectItem value="qty">Quantity</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-gray-50 dark:bg-gray-800/50">
-                        <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Name/Code</TableHead>
-                        <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Category</TableHead>
-                        <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Stock</TableHead>
-                        <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Price</TableHead>
-                        <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Status</TableHead>
-                        <TableHead className="w-[100px] font-semibold text-gray-900 dark:text-gray-100">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {itemsLoading ? (
-                        <TableRow>
-                          <TableCell colSpan={6} className="text-center py-8">
-                            Loading items...
-                          </TableCell>
-                        </TableRow>
-                      ) : filteredItems.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                            No items found. Add your first inventory item to get started.
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        filteredItems.map((item, index) => (
-                          <TableRow 
-                            key={item._id} 
-                            className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${
-                              index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50/50 dark:bg-gray-800/20'
-                            }`}
-                          >
-                            <TableCell className="py-4">
-                              <div>
-                                <div className="font-medium text-gray-900 dark:text-gray-100">{item.name}</div>
-                                <div className="text-sm text-gray-500 dark:text-gray-400">{item.code}</div>
-                              </div>
-                            </TableCell>
-                            <TableCell className="py-4">
-                              <div>
-                                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-800">
-                                  {item.category}
-                                </Badge>
-                                {item.subCategory && (
-                                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                    {item.subCategory}
-                                  </div>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell className="py-4">
-                              <div>
-                                <div className="font-medium text-gray-900 dark:text-gray-100">{item.qty} {item.unit}</div>
-                                <div className="text-xs text-gray-500 dark:text-gray-400">
-                                  Min: {item.minStock} {item.unit}
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell className="py-4">
-                              <span className="font-medium text-green-600 dark:text-green-400">
-                                ₹{item.salePrice?.toLocaleString() || 0}
-                              </span>
-                            </TableCell>
-                            <TableCell className="py-4">
-                              <Badge 
-                                variant={(item.qty || 0) <= (item.minStock || 0) ? 'destructive' : 'default'}
-                                className={
-                                  (item.qty || 0) <= (item.minStock || 0) 
-                                    ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' 
-                                    : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                                }
-                              >
-                                {(item.qty || 0) <= (item.minStock || 0) ? 'Low Stock' : 'In Stock'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="py-4">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-40">
-                                  <DropdownMenuItem onClick={() => handleView(item)} className="hover:bg-blue-50 dark:hover:bg-blue-950/30">
-                                    <Eye className="h-4 w-4 mr-2" />
-                                    View Details
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleEdit(item)} className="hover:bg-green-50 dark:hover:bg-green-950/30">
-                                    <Edit className="h-4 w-4 mr-2" />
-                                    Edit Item
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem 
-                                    onClick={() => handleDelete(item)}
-                                    className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 dark:text-red-400"
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
+      {/* Main Content Area */}
+      <Card className="shadow-sm border-gray-200 dark:border-gray-700">
+        <CardHeader className="bg-gray-50 dark:bg-gray-800/50">
+          <CardTitle className="flex items-center gap-2 text-gray-800 dark:text-gray-200">
+            <Package className="h-5 w-5" />
+            Inventory Management
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search items by name, code, or description..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 w-full border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400"
+                />
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger className="w-[200px] border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400">
+                  <Filter className="h-4 w-4 mr-2 text-gray-400" />
+                  <SelectValue placeholder="All Categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    <div className="flex items-center gap-2">
+                      <Package2 className="h-4 w-4" />
+                      All Categories
+                    </div>
+                  </SelectItem>
+                  {categories.length > 0 && categories.map((category) => (
+                    <SelectItem key={category._id || category.name} value={category.name}>
+                      <div className="flex items-center gap-2">
+                        <Tag className="h-4 w-4" />
+                        {category.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-[150px] border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400">
+                  <BarChart3 className="h-4 w-4 mr-2 text-gray-400" />
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name">Name A-Z</SelectItem>
+                  <SelectItem value="code">Code</SelectItem>
+                  <SelectItem value="category">Category</SelectItem>
+                  <SelectItem value="qty">Quantity</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-50 dark:bg-gray-800/50">
+                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Name/Code</TableHead>
+                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Category</TableHead>
+                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Stock</TableHead>
+                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Price</TableHead>
+                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Status</TableHead>
+                    <TableHead className="w-[100px] font-semibold text-gray-900 dark:text-gray-100">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {itemsLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8">
+                        Loading items...
+                      </TableCell>
+                    </TableRow>
+                  ) : filteredItems.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        No items found. Add your first inventory item to get started.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredItems.map((item, index) => (
+                      <TableRow 
+                        key={item._id} 
+                        className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${
+                          index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50/50 dark:bg-gray-800/20'
+                        }`}
+                      >
+                        <TableCell className="py-4">
+                          <div>
+                            <div className="font-medium text-gray-900 dark:text-gray-100">{item.name}</div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">{item.code}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-4">
+                          <div>
+                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-800">
+                              {item.category}
+                            </Badge>
+                            {item.subCategory && (
+                              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                {item.subCategory}
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-4">
+                          <div>
+                            <div className="font-medium text-gray-900 dark:text-gray-100">{item.qty} {item.unit}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              Min: {item.minStock} {item.unit}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-4">
+                          <span className="font-medium text-green-600 dark:text-green-400">
+                            ₹{item.salePrice?.toLocaleString() || 0}
+                          </span>
+                        </TableCell>
+                        <TableCell className="py-4">
+                          <Badge 
+                            variant={(item.qty || 0) <= (item.minStock || 0) ? 'destructive' : 'default'}
+                            className={
+                              (item.qty || 0) <= (item.minStock || 0) 
+                                ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' 
+                                : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                            }
+                          >
+                            {(item.qty || 0) <= (item.minStock || 0) ? 'Low Stock' : 'In Stock'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="py-4">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-40">
+                              <DropdownMenuItem onClick={() => handleView(item)} className="hover:bg-blue-50 dark:hover:bg-blue-950/30">
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEdit(item)} className="hover:bg-green-50 dark:hover:bg-green-950/30">
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit Item
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => handleDelete(item)}
+                                className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 dark:text-red-400"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <ModernInventoryForm
         isOpen={isFormOpen}

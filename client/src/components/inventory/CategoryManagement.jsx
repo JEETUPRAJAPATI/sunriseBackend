@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import * as React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Dialog,
@@ -122,9 +123,18 @@ function CategoryFormModal({ isOpen, onClose, editingCategory, onSubmit, isLoadi
   };
 
   const handleClose = () => {
-    setSubcategories([]);
+    setSubcategories(editingCategory?.subcategories || []);
     onClose();
   };
+
+  // Update subcategories when editingCategory changes
+  React.useEffect(() => {
+    if (editingCategory?.subcategories) {
+      setSubcategories(editingCategory.subcategories);
+    } else {
+      setSubcategories([]);
+    }
+  }, [editingCategory]);
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -421,8 +431,8 @@ function CategoryManagementModal({ isOpen, onClose }) {
             </div>
 
             {/* Categories List */}
-            <ScrollArea className="h-[400px] w-full">
-              <div className="space-y-4">
+            <ScrollArea className="h-[500px] w-full">
+              <div className="space-y-3">
                 {categoriesLoading ? (
                   <div className="text-center py-8">
                     <div className="text-sm text-muted-foreground">Loading categories...</div>
@@ -438,32 +448,41 @@ function CategoryManagementModal({ isOpen, onClose }) {
                     </p>
                   </div>
                 ) : (
-                  categories.map((category) => (
-                    <Card key={category._id} className="border border-gray-200 dark:border-gray-700">
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-800">
-                                <Tag className="h-3 w-3 mr-1" />
-                                {category.name}
-                              </Badge>
-                            </div>
-                            {category.description && (
-                              <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                                {category.description}
-                              </p>
-                            )}
-                            {category.subcategories && category.subcategories.length > 0 && (
-                              <div>
-                                <div className="flex items-center gap-1 mb-2">
-                                  <List className="h-3 w-3 text-gray-400" />
-                                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                                    Subcategories:
-                                  </span>
-                                </div>
+                  <div className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gray-50 dark:bg-gray-800/50">
+                          <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Category Name</TableHead>
+                          <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Description</TableHead>
+                          <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Subcategories</TableHead>
+                          <TableHead className="w-[120px] font-semibold text-gray-900 dark:text-gray-100">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {categories.map((category, index) => (
+                          <TableRow 
+                            key={category._id}
+                            className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${
+                              index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50/50 dark:bg-gray-800/20'
+                            }`}
+                          >
+                            <TableCell className="py-4">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-800">
+                                  <Tag className="h-3 w-3 mr-1" />
+                                  {category.name}
+                                </Badge>
+                              </div>
+                            </TableCell>
+                            <TableCell className="py-4">
+                              <span className="text-sm text-gray-600 dark:text-gray-400">
+                                {category.description || 'No description'}
+                              </span>
+                            </TableCell>
+                            <TableCell className="py-4">
+                              {category.subcategories && category.subcategories.length > 0 ? (
                                 <div className="flex flex-wrap gap-1">
-                                  {category.subcategories.map((sub, index) => (
+                                  {category.subcategories.slice(0, 3).map((sub, index) => (
                                     <Badge 
                                       key={index} 
                                       variant="secondary" 
@@ -472,32 +491,43 @@ function CategoryManagementModal({ isOpen, onClose }) {
                                       {sub}
                                     </Badge>
                                   ))}
+                                  {category.subcategories.length > 3 && (
+                                    <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                                      +{category.subcategories.length - 3} more
+                                    </Badge>
+                                  )}
                                 </div>
+                              ) : (
+                                <span className="text-xs text-gray-400">No subcategories</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="py-4">
+                              <div className="flex gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleEdit(category)}
+                                  className="h-8 w-8 p-0 hover:bg-green-50 dark:hover:bg-green-950/30"
+                                  title="Edit Category"
+                                >
+                                  <Edit className="h-4 w-4 text-green-600" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleDelete(category)}
+                                  className="h-8 w-8 p-0 hover:bg-red-50 dark:hover:bg-red-950/30"
+                                  title="Delete Category"
+                                >
+                                  <Trash2 className="h-4 w-4 text-red-600" />
+                                </Button>
                               </div>
-                            )}
-                          </div>
-                          <div className="flex gap-2 ml-4">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleEdit(category)}
-                              className="h-8 w-8 p-0 hover:bg-green-50 dark:hover:bg-green-950/30"
-                            >
-                              <Edit className="h-4 w-4 text-green-600" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleDelete(category)}
-                              className="h-8 w-8 p-0 hover:bg-red-50 dark:hover:bg-red-950/30"
-                            >
-                              <Trash2 className="h-4 w-4 text-red-600" />
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 )}
               </div>
             </ScrollArea>
@@ -648,59 +678,58 @@ function CustomerCategoryManagementModal({ isOpen, onClose }) {
             </div>
 
             {/* Customer Categories List */}
-            <ScrollArea className="h-[400px] w-full">
-              <div className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-gray-50 dark:bg-gray-800/50">
-                      <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Name</TableHead>
-                      <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Description</TableHead>
-                      <TableHead className="w-[100px] font-semibold text-gray-900 dark:text-gray-100">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoading ? (
-                      <TableRow>
-                        <TableCell colSpan={3} className="text-center py-8">
-                          Loading customer categories...
-                        </TableCell>
+            <ScrollArea className="h-[500px] w-full">
+              {isLoading ? (
+                <div className="text-center py-8">
+                  <div className="text-sm text-muted-foreground">Loading customer categories...</div>
+                </div>
+              ) : customerCategories.length === 0 ? (
+                <div className="text-center py-8">
+                  <Users className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                    No customer categories found
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Get started by creating your first customer category
+                  </p>
+                </div>
+              ) : (
+                <div className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-gray-50 dark:bg-gray-800/50">
+                        <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Category Name</TableHead>
+                        <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Description</TableHead>
+                        <TableHead className="w-[120px] font-semibold text-gray-900 dark:text-gray-100">Actions</TableHead>
                       </TableRow>
-                    ) : customerCategories.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={3} className="text-center py-8">
-                          <Users className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                            No customer categories found
-                          </h3>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            Get started by creating your first customer category
-                          </p>
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      customerCategories.map((category, index) => (
+                    </TableHeader>
+                    <TableBody>
+                      {customerCategories.map((category, index) => (
                         <TableRow 
                           key={category._id}
                           className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${
                             index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50/50 dark:bg-gray-800/20'
                           }`}
                         >
-                          <TableCell className="font-medium text-gray-900 dark:text-gray-100 py-4">
+                          <TableCell className="py-4">
                             <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-300 dark:border-green-800">
                               <Users className="h-3 w-3 mr-1" />
                               {category.name}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-sm text-gray-500 dark:text-gray-400 py-4">
-                            {category.description || 'No description'}
+                          <TableCell className="py-4">
+                            <span className="text-sm text-gray-600 dark:text-gray-400">
+                              {category.description || 'No description'}
+                            </span>
                           </TableCell>
                           <TableCell className="py-4">
-                            <div className="flex gap-2">
+                            <div className="flex gap-1">
                               <Button
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => handleEdit(category)}
                                 className="h-8 w-8 p-0 hover:bg-green-50 dark:hover:bg-green-950/30"
+                                title="Edit Customer Category"
                               >
                                 <Edit className="h-4 w-4 text-green-600" />
                               </Button>
@@ -709,17 +738,18 @@ function CustomerCategoryManagementModal({ isOpen, onClose }) {
                                 variant="ghost"
                                 onClick={() => handleDelete(category)}
                                 className="h-8 w-8 p-0 hover:bg-red-50 dark:hover:bg-red-950/30"
+                                title="Delete Customer Category"
                               >
                                 <Trash2 className="h-4 w-4 text-red-600" />
                               </Button>
                             </div>
                           </TableCell>
                         </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
             </ScrollArea>
           </div>
         </DialogContent>
