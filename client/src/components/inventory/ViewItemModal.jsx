@@ -1,4 +1,4 @@
-import React from 'react';
+// ViewItemModal component
 import {
   Dialog,
   DialogContent,

@@ -1,4 +1,4 @@
-import React from 'react';
+// DeleteConfirmDialog component
 import {
   Dialog,
   DialogContent,
