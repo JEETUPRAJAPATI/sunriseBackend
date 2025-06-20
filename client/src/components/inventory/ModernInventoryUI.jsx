@@ -105,27 +105,21 @@ function ModernStats({ stats, isLoading }) {
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       {statsCards.map((stat, index) => (
         <Card key={index} className="overflow-hidden">
-          <CardContent className="p-0">
-            <div className="flex items-center">
-              <div className={`p-4 ${stat.bgColor}`}>
-                <stat.icon className={`h-8 w-8 ${stat.color}`} />
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-4">
+              <div className={`p-3 rounded-lg ${stat.bgColor}`}>
+                <stat.icon className={`h-6 w-6 ${stat.color}`} />
               </div>
-              <div className="flex-1 p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
-                    <p className="text-2xl font-bold">
-                      {isLoading ? (
-                        <div className="h-6 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                      ) : (
-                        stat.value
-                      )}
-                    </p>
-                  </div>
-                  <div className="text-xs text-green-600 font-medium">
-                    {stat.change}
-                  </div>
-                </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
+                <p className="text-2xl font-bold">
+                  {isLoading ? (
+                    <div className="h-6 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                  ) : (
+                    stat.value
+                  )}
+                </p>
+                <p className="text-xs text-green-600 font-medium">{stat.change}</p>
               </div>
             </div>
           </CardContent>
@@ -149,7 +143,7 @@ export default function ModernInventoryUI() {
   const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, item: null });
   const [activeTab, setActiveTab] = useState('inventory');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('name');
 
   // Data fetching with React Query
@@ -268,7 +262,7 @@ export default function ModernInventoryUI() {
       item.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.description?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesCategory = !selectedCategory || item.category === selectedCategory;
+    const matchesCategory = !selectedCategory || selectedCategory === 'all' || item.category === selectedCategory;
     
     return matchesSearch && matchesCategory;
   }).sort((a, b) => {
@@ -332,7 +326,7 @@ export default function ModernInventoryUI() {
                       <SelectValue placeholder="All Categories" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Categories</SelectItem>
+                      <SelectItem value="all">All Categories</SelectItem>
                       {categories.map((category) => (
                         <SelectItem key={category._id} value={category.name}>
                           {category.name}
