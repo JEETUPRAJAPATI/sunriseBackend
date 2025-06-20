@@ -5,7 +5,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,7 +48,7 @@ function ConfirmationDialog({ isOpen, onClose, onConfirm, title, description, co
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-amber-500" />
+            <AlertTriangle className="h-5 w-5 text-red-500" />
             {title}
           </DialogTitle>
         </DialogHeader>
@@ -69,136 +68,6 @@ function ConfirmationDialog({ isOpen, onClose, onConfirm, title, description, co
   );
 }
 
-// Category Form Component
-function CategoryForm({ isOpen, onClose, category = null, type = 'category' }) {
-  const [formData, setFormData] = useState({
-    name: category?.name || '',
-    description: category?.description || '',
-    subCategories: category?.subCategories?.join(', ') || ''
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  const endpoint = type === 'customer' ? '/api/customer-categories' : '/api/categories';
-  
-  const mutation = useMutation({
-    mutationFn: (data) => {
-      if (category) {
-        return apiRequest('PUT', `${endpoint}/${category._id}`, data);
-      }
-      return apiRequest('POST', endpoint, data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [endpoint] });
-      showSuccessToast(
-        `${type === 'customer' ? 'Customer Category' : 'Category'} ${category ? 'Updated' : 'Created'}`,
-        `Successfully ${category ? 'updated' : 'created'} ${formData.name}`
-      );
-      onClose();
-      setFormData({ name: '', description: '', subCategories: '' });
-    },
-    onError: (error) => {
-      showSmartToast(error, `${category ? 'Update' : 'Create'} ${type === 'customer' ? 'Customer Category' : 'Category'}`);
-    }
-  });
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!formData.name.trim()) {
-      toast({
-        title: "Validation Error",
-        description: "Category name is required",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const submitData = {
-      name: formData.name.trim(),
-      description: formData.description.trim()
-    };
-
-    if (type !== 'customer' && formData.subCategories.trim()) {
-      submitData.subCategories = formData.subCategories
-        .split(',')
-        .map(sub => sub.trim())
-        .filter(sub => sub);
-    }
-
-    mutation.mutate(submitData);
-  };
-
-  React.useEffect(() => {
-    if (category) {
-      setFormData({
-        name: category.name || '',
-        description: category.description || '',
-        subCategories: category.subCategories?.join(', ') || ''
-      });
-    } else {
-      setFormData({ name: '', description: '', subCategories: '' });
-    }
-  }, [category, isOpen]);
-
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            {type === 'customer' ? <Users className="h-5 w-5" /> : <Tag className="h-5 w-5" />}
-            {category ? 'Edit' : 'Add'} {type === 'customer' ? 'Customer Category' : 'Category'}
-          </DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="name">Name *</Label>
-            <Input
-              id="name"
-              value={formData.name}
-              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              placeholder="Enter category name"
-              required
-            />
-          </div>
-          <div>
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="Enter category description"
-              rows={3}
-            />
-          </div>
-          {type !== 'customer' && (
-            <div>
-              <Label htmlFor="subCategories">Sub Categories</Label>
-              <Input
-                id="subCategories"
-                value={formData.subCategories}
-                onChange={(e) => setFormData(prev => ({ ...prev, subCategories: e.target.value }))}
-                placeholder="Enter sub categories separated by commas"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Separate multiple sub categories with commas
-              </p>
-            </div>
-          )}
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? 'Saving...' : category ? 'Update' : 'Create'}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 // Main Category Management Component
 export default function CategoryManagement({ 
   showCategoryForm, 
@@ -206,11 +75,10 @@ export default function CategoryManagement({
   showCustomerCategoryForm, 
   setShowCustomerCategoryForm 
 }) {
-  const [categoryFormOpen, setCategoryFormOpen] = useState(false);
-  const [customerCategoryFormOpen, setCustomerCategoryFormOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [editingCustomerCategory, setEditingCustomerCategory] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, item: null, type: null });
+  const { toast } = useToast();
   const queryClient = useQueryClient();
 
   // Data fetching with proper extraction
@@ -226,6 +94,39 @@ export default function CategoryManagement({
   const categories = Array.isArray(categoriesData?.categories) ? categoriesData.categories : [];
   const customerCategories = Array.isArray(customerCategoriesData?.customerCategories) ? customerCategoriesData.customerCategories : [];
 
+  // Mutations
+  const createCategoryMutation = useMutation({
+    mutationFn: (data) => apiRequest('POST', '/api/categories', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['/api/categories']);
+      setShowCategoryForm(false);
+      setEditingCategory(null);
+      toast({
+        title: "Success",
+        description: "Category created successfully",
+      });
+    },
+    onError: (error) => {
+      showSmartToast(error, 'Create Category');
+    }
+  });
+
+  const createCustomerCategoryMutation = useMutation({
+    mutationFn: (data) => apiRequest('POST', '/api/customer-categories', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['/api/customer-categories']);
+      setShowCustomerCategoryForm(false);
+      setEditingCustomerCategory(null);
+      toast({
+        title: "Success",
+        description: "Customer category created successfully",
+      });
+    },
+    onError: (error) => {
+      showSmartToast(error, 'Create Customer Category');
+    }
+  });
+
   const deleteMutation = useMutation({
     mutationFn: ({ id, type }) => {
       const endpoint = type === 'customer' ? '/api/customer-categories' : '/api/categories';
@@ -233,7 +134,7 @@ export default function CategoryManagement({
     },
     onSuccess: (_, { type }) => {
       const endpoint = type === 'customer' ? '/api/customer-categories' : '/api/categories';
-      queryClient.invalidateQueries({ queryKey: [endpoint] });
+      queryClient.invalidateQueries([endpoint]);
       showSuccessToast(
         `${type === 'customer' ? 'Customer Category' : 'Category'} Deleted`,
         'Successfully deleted the category'
@@ -245,23 +146,34 @@ export default function CategoryManagement({
     }
   });
 
-  const handleEdit = (category, type) => {
-    if (type === 'customer') {
-      setEditingCustomerCategory(category);
-      setCustomerCategoryFormOpen(true);
-    } else {
-      setEditingCategory(category);
-      setCategoryFormOpen(true);
-    }
+  // Handlers
+  const handleCreateCategory = (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = {
+      name: formData.get('name'),
+      description: formData.get('description'),
+    };
+    createCategoryMutation.mutate(data);
   };
 
-  const handleDelete = (category, type) => {
+  const handleCreateCustomerCategory = (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = {
+      name: formData.get('name'),
+      description: formData.get('description'),
+    };
+    createCustomerCategoryMutation.mutate(data);
+  };
+
+  const handleDelete = (item, type) => {
     setDeleteConfirm({ 
       isOpen: true, 
-      item: category, 
+      item, 
       type,
       title: `Delete ${type === 'customer' ? 'Customer Category' : 'Category'}`,
-      description: `Are you sure you want to delete "${category.name}"? This action cannot be undone.`
+      description: `Are you sure you want to delete "${item.name}"? This action cannot be undone.`
     });
   };
 
@@ -295,76 +207,83 @@ export default function CategoryManagement({
         </TabsList>
 
         <TabsContent value="categories">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <FolderOpen className="h-5 w-5" />
+          <Card className="shadow-sm border-gray-200 dark:border-gray-700">
+            <CardHeader className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-950/20 dark:to-blue-900/30 border-b border-blue-200 dark:border-blue-800">
+              <div className="flex justify-between items-center">
+                <CardTitle className="flex items-center gap-2 text-blue-900 dark:text-blue-100">
+                  <Tag className="h-5 w-5" />
                   Product Categories
                 </CardTitle>
-                <Button onClick={() => setCategoryFormOpen(true)}>
+                <Button 
+                  onClick={() => setShowCategoryForm(true)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   Add Category
                 </Button>
               </div>
             </CardHeader>
-            <CardContent>
-              {categoriesLoading ? (
-                <div className="text-center py-8">Loading categories...</div>
-              ) : (
+            <CardContent className="p-6">
+              <div className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead>Sub Categories</TableHead>
-                      <TableHead className="w-[100px]">Actions</TableHead>
+                    <TableRow className="bg-gray-50 dark:bg-gray-800/50">
+                      <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Name</TableHead>
+                      <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Description</TableHead>
+                      <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Items Count</TableHead>
+                      <TableHead className="w-[100px] font-semibold text-gray-900 dark:text-gray-100">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {categories.length === 0 ? (
+                    {categoriesLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-8">
+                          Loading categories...
+                        </TableCell>
+                      </TableRow>
+                    ) : categories.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                           No categories found. Add your first category to get started.
                         </TableCell>
                       </TableRow>
                     ) : (
-                      categories.map((category) => (
-                        <TableRow key={category._id}>
-                          <TableCell className="font-medium">{category.name}</TableCell>
-                          <TableCell className="text-muted-foreground">
+                      categories.map((category, index) => (
+                        <TableRow 
+                          key={category._id}
+                          className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${
+                            index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50/50 dark:bg-gray-800/20'
+                          }`}
+                        >
+                          <TableCell className="font-medium text-gray-900 dark:text-gray-100 py-4">
+                            {category.name}
+                          </TableCell>
+                          <TableCell className="text-sm text-gray-500 dark:text-gray-400 py-4">
                             {category.description || 'No description'}
                           </TableCell>
-                          <TableCell>
-                            {category.subCategories && category.subCategories.length > 0 ? (
-                              <div className="flex flex-wrap gap-1">
-                                {category.subCategories.map((sub, index) => (
-                                  <Badge key={index} variant="outline" className="text-xs">
-                                    {sub}
-                                  </Badge>
-                                ))}
-                              </div>
-                            ) : (
-                              <span className="text-muted-foreground text-sm">No subcategories</span>
-                            )}
+                          <TableCell className="py-4">
+                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-800">
+                              {category.itemCount || 0} items
+                            </Badge>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="py-4">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800">
                                   <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem
-                                  onClick={() => handleEdit(category, 'category')}
+                              <DropdownMenuContent align="end" className="w-40">
+                                <DropdownMenuItem 
+                                  onClick={() => setEditingCategory(category)}
+                                  className="hover:bg-green-50 dark:hover:bg-green-950/30"
                                 >
                                   <Edit className="h-4 w-4 mr-2" />
-                                  Edit
+                                  Edit Category
                                 </DropdownMenuItem>
-                                <DropdownMenuItem
+                                <DropdownMenuItem 
                                   onClick={() => handleDelete(category, 'category')}
-                                  className="text-red-600"
+                                  className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 dark:text-red-400"
                                 >
                                   <Trash2 className="h-4 w-4 mr-2" />
                                   Delete
@@ -377,68 +296,83 @@ export default function CategoryManagement({
                     )}
                   </TableBody>
                 </Table>
-              )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="customer-categories">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
+          <Card className="shadow-sm border-gray-200 dark:border-gray-700">
+            <CardHeader className="bg-gradient-to-r from-green-50 to-green-100 dark:from-green-950/20 dark:to-green-900/30 border-b border-green-200 dark:border-green-800">
+              <div className="flex justify-between items-center">
+                <CardTitle className="flex items-center gap-2 text-green-900 dark:text-green-100">
                   <Users className="h-5 w-5" />
                   Customer Categories
                 </CardTitle>
-                <Button onClick={() => setCustomerCategoryFormOpen(true)}>
+                <Button 
+                  onClick={() => setShowCustomerCategoryForm(true)}
+                  className="bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   Add Customer Category
                 </Button>
               </div>
             </CardHeader>
-            <CardContent>
-              {customerCategoriesLoading ? (
-                <div className="text-center py-8">Loading customer categories...</div>
-              ) : (
+            <CardContent className="p-6">
+              <div className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead className="w-[100px]">Actions</TableHead>
+                    <TableRow className="bg-gray-50 dark:bg-gray-800/50">
+                      <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Name</TableHead>
+                      <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Description</TableHead>
+                      <TableHead className="w-[100px] font-semibold text-gray-900 dark:text-gray-100">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {customerCategories.length === 0 ? (
+                    {customerCategoriesLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={3} className="text-center py-8">
+                          Loading customer categories...
+                        </TableCell>
+                      </TableRow>
+                    ) : customerCategories.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
                           No customer categories found. Add your first customer category to get started.
                         </TableCell>
                       </TableRow>
                     ) : (
-                      customerCategories.map((category) => (
-                        <TableRow key={category._id}>
-                          <TableCell className="font-medium">{category.name}</TableCell>
-                          <TableCell className="text-muted-foreground">
+                      customerCategories.map((category, index) => (
+                        <TableRow 
+                          key={category._id}
+                          className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${
+                            index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50/50 dark:bg-gray-800/20'
+                          }`}
+                        >
+                          <TableCell className="font-medium text-gray-900 dark:text-gray-100 py-4">
+                            {category.name}
+                          </TableCell>
+                          <TableCell className="text-sm text-gray-500 dark:text-gray-400 py-4">
                             {category.description || 'No description'}
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="py-4">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800">
                                   <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem
-                                  onClick={() => handleEdit(category, 'customer')}
+                              <DropdownMenuContent align="end" className="w-40">
+                                <DropdownMenuItem 
+                                  onClick={() => setEditingCustomerCategory(category)}
+                                  className="hover:bg-green-50 dark:hover:bg-green-950/30"
                                 >
                                   <Edit className="h-4 w-4 mr-2" />
-                                  Edit
+                                  Edit Category
                                 </DropdownMenuItem>
-                                <DropdownMenuItem
+                                <DropdownMenuItem 
                                   onClick={() => handleDelete(category, 'customer')}
-                                  className="text-red-600"
+                                  className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 dark:text-red-400"
                                 >
                                   <Trash2 className="h-4 w-4 mr-2" />
                                   Delete
@@ -451,40 +385,137 @@ export default function CategoryManagement({
                     )}
                   </TableBody>
                 </Table>
-              )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
 
-      {/* Forms */}
-      <CategoryForm
-        isOpen={categoryFormOpen}
-        onClose={() => {
-          setCategoryFormOpen(false);
-          setEditingCategory(null);
-        }}
-        category={editingCategory}
-        type="category"
-      />
+      {/* Add Category Dialog */}
+      <Dialog open={showCategoryForm} onOpenChange={setShowCategoryForm}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader className="text-center space-y-3">
+            <div className="mx-auto w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+              <Tag className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            </div>
+            <DialogTitle className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+              Add New Category
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreateCategory} className="space-y-6">
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="name" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Category Name *
+                </Label>
+                <Input
+                  id="name"
+                  name="name"
+                  required
+                  placeholder="Enter category name"
+                  className="mt-1 border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400"
+                />
+              </div>
+              <div>
+                <Label htmlFor="description" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Description
+                </Label>
+                <Textarea
+                  id="description"
+                  name="description"
+                  placeholder="Enter category description"
+                  rows={3}
+                  className="mt-1 border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setShowCategoryForm(false)}
+                className="border-gray-300 dark:border-gray-600"
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={createCategoryMutation.isPending}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                {createCategoryMutation.isPending ? 'Creating...' : 'Create Category'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
-      <CategoryForm
-        isOpen={customerCategoryFormOpen}
-        onClose={() => {
-          setCustomerCategoryFormOpen(false);
-          setEditingCustomerCategory(null);
-        }}
-        category={editingCustomerCategory}
-        type="customer"
-      />
+      {/* Add Customer Category Dialog */}
+      <Dialog open={showCustomerCategoryForm} onOpenChange={setShowCustomerCategoryForm}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader className="text-center space-y-3">
+            <div className="mx-auto w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+              <Users className="h-6 w-6 text-green-600 dark:text-green-400" />
+            </div>
+            <DialogTitle className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+              Add Customer Category
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreateCustomerCategory} className="space-y-6">
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="customerName" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Customer Category Name *
+                </Label>
+                <Input
+                  id="customerName"
+                  name="name"
+                  required
+                  placeholder="Enter customer category name"
+                  className="mt-1 border-gray-300 dark:border-gray-600 focus:border-green-500 dark:focus:border-green-400"
+                />
+              </div>
+              <div>
+                <Label htmlFor="customerDescription" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Description
+                </Label>
+                <Textarea
+                  id="customerDescription"
+                  name="description"
+                  placeholder="Enter customer category description"
+                  rows={3}
+                  className="mt-1 border-gray-300 dark:border-gray-600 focus:border-green-500 dark:focus:border-green-400"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setShowCustomerCategoryForm(false)}
+                className="border-gray-300 dark:border-gray-600"
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={createCustomerCategoryMutation.isPending}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                {createCustomerCategoryMutation.isPending ? 'Creating...' : 'Create Customer Category'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
-      {/* Delete Confirmation */}
+      {/* Delete Confirmation Dialog */}
       <ConfirmationDialog
         isOpen={deleteConfirm.isOpen}
         onClose={() => setDeleteConfirm({ isOpen: false, item: null, type: null })}
         onConfirm={confirmDelete}
-        title={`Delete ${deleteConfirm.type === 'customer' ? 'Customer Category' : 'Category'}`}
-        description={`Are you sure you want to delete "${deleteConfirm.item?.name}"? This action cannot be undone.`}
+        title={deleteConfirm.title}
+        description={deleteConfirm.description}
         confirmText="Delete"
         confirmVariant="destructive"
       />
