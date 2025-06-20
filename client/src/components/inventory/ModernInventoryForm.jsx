@@ -101,8 +101,10 @@ export default function ModernInventoryForm({
     if (!selectedCategory) return [];
     
     const selectedCat = categories.find(cat => cat.name === selectedCategory);
-    console.log('Selected category:', selectedCat);
-    console.log('Available subcategories:', selectedCat?.subcategories);
+    console.log('DEBUG: Selected category:', selectedCategory);
+    console.log('DEBUG: Found category object:', selectedCat);
+    console.log('DEBUG: Available subcategories:', selectedCat?.subcategories);
+    console.log('DEBUG: All categories:', categories);
     
     return selectedCat?.subcategories || [];
   }, [selectedCategory, categories]);
@@ -481,7 +483,7 @@ export default function ModernInventoryForm({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Sub-Category</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value} disabled={!selectedCategory || availableSubCategories.length === 0}>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={!selectedCategory}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select sub-category" />
