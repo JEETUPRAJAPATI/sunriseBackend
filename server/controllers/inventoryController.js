@@ -220,13 +220,16 @@ const validateItemData = (data) => {
   
   // Required fields
   if (!data.name || data.name.trim().length < 2) {
-    errors.name = 'Name must be at least 2 characters';
+    errors.name = 'Item name must be at least 2 characters';
   }
-  if (!data.type) {
-    errors.type = 'Type is required';
-  }
-  if (!data.category) {
+  if (!data.category || data.category.trim().length === 0) {
     errors.category = 'Category is required';
+  }
+  if (!data.customerCategory || data.customerCategory.trim().length === 0) {
+    errors.customerCategory = 'Customer Category is required';
+  }
+  if (!data.unit || data.unit.trim().length === 0) {
+    errors.unit = 'Unit is required';
   }
   if (!data.unit) {
     errors.unit = 'Unit is required';
