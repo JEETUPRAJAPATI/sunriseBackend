@@ -160,23 +160,32 @@ export const createItem = async (req, res) => {
 
     const itemData = req.body;
 
-    // Validate required fields
-    if (!itemData.name || !itemData.type || !itemData.category || !itemData.unit) {
-      return res.status(400).json({ message: 'Required fields: name, type, category, unit' });
+    // Enhanced validation
+    const validation = validateItemData(itemData);
+    if (!validation.isValid) {
+      return res.status(400).json({ 
+        message: 'Validation failed',
+        errors: validation.errors 
+      });
     }
 
     // Auto-generate code if not provided
-    if (!itemData.code) {
+    if (!itemData.code || itemData.code.trim() === '') {
       itemData.code = await generateItemCode(itemData.type);
     } else {
       // Check if code already exists
-      const existingItem = await Item.findOne({ code: itemData.code });
+      const existingItem = await Item.findOne({ code: itemData.code.trim() });
       if (existingItem) {
-        return res.status(400).json({ message: 'Item code already exists' });
+        return res.status(400).json({ 
+          message: 'Validation failed',
+          errors: { code: 'Item code already exists' }
+        });
       }
     }
 
-    const item = await Item.create(itemData);
+    // Sanitize and prepare data
+    const sanitizedData = sanitizeItemData(itemData);
+    const item = await Item.create(sanitizedData);
 
     res.status(201).json({
       message: 'Item created successfully',
@@ -185,11 +194,122 @@ export const createItem = async (req, res) => {
   } catch (error) {
     console.error('Create item error:', error);
     if (error.code === 11000) {
-      res.status(400).json({ message: 'Item code already exists' });
+      const field = Object.keys(error.keyPattern)[0];
+      res.status(400).json({ 
+        message: 'Validation failed',
+        errors: { [field]: `${field} already exists` }
+      });
+    } else if (error.name === 'ValidationError') {
+      const errors = {};
+      Object.keys(error.errors).forEach(key => {
+        errors[key] = error.errors[key].message;
+      });
+      res.status(400).json({ 
+        message: 'Validation failed',
+        errors 
+      });
     } else {
       res.status(500).json({ message: 'Internal server error' });
     }
   }
+};
+
+// Validation helper function
+const validateItemData = (data) => {
+  const errors = {};
+  
+  // Required fields
+  if (!data.name || data.name.trim().length < 2) {
+    errors.name = 'Name must be at least 2 characters';
+  }
+  if (!data.type) {
+    errors.type = 'Type is required';
+  }
+  if (!data.category) {
+    errors.category = 'Category is required';
+  }
+  if (!data.unit) {
+    errors.unit = 'Unit is required';
+  }
+
+  // Numeric validations
+  if (data.qty !== undefined && (isNaN(data.qty) || data.qty < 0)) {
+    errors.qty = 'Quantity must be a non-negative number';
+  }
+  if (data.stdCost !== undefined && (isNaN(data.stdCost) || data.stdCost < 0)) {
+    errors.stdCost = 'Standard cost must be a non-negative number';
+  }
+  if (data.purchaseCost !== undefined && (isNaN(data.purchaseCost) || data.purchaseCost < 0)) {
+    errors.purchaseCost = 'Purchase cost must be a non-negative number';
+  }
+  if (data.salePrice !== undefined && (isNaN(data.salePrice) || data.salePrice < 0)) {
+    errors.salePrice = 'Sale price must be a non-negative number';
+  }
+  if (data.mrp !== undefined && (isNaN(data.mrp) || data.mrp < 0)) {
+    errors.mrp = 'MRP must be a non-negative number';
+  }
+  if (data.gst !== undefined && (isNaN(data.gst) || data.gst < 0 || data.gst > 100)) {
+    errors.gst = 'GST must be between 0 and 100';
+  }
+  if (data.minStock !== undefined && (isNaN(data.minStock) || data.minStock < 0)) {
+    errors.minStock = 'Minimum stock must be a non-negative number';
+  }
+  if (data.leadTime !== undefined && (isNaN(data.leadTime) || data.leadTime < 0)) {
+    errors.leadTime = 'Lead time must be a non-negative number';
+  }
+
+  // Enum validations
+  const validTypes = ['Product', 'Material', 'Spares', 'Assemblies'];
+  if (data.type && !validTypes.includes(data.type)) {
+    errors.type = 'Invalid item type';
+  }
+
+  const validImportance = ['Low', 'Normal', 'High', 'Critical'];
+  if (data.importance && !validImportance.includes(data.importance)) {
+    errors.importance = 'Invalid importance level';
+  }
+
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors
+  };
+};
+
+// Data sanitization helper
+const sanitizeItemData = (data) => {
+  const sanitized = { ...data };
+  
+  // Trim string fields
+  if (sanitized.name) sanitized.name = sanitized.name.trim();
+  if (sanitized.code) sanitized.code = sanitized.code.trim();
+  if (sanitized.category) sanitized.category = sanitized.category.trim();
+  if (sanitized.subCategory) sanitized.subCategory = sanitized.subCategory.trim();
+  if (sanitized.batch) sanitized.batch = sanitized.batch.trim();
+  if (sanitized.unit) sanitized.unit = sanitized.unit.trim();
+  if (sanitized.store) sanitized.store = sanitized.store.trim();
+  if (sanitized.hsn) sanitized.hsn = sanitized.hsn.trim();
+  if (sanitized.description) sanitized.description = sanitized.description.trim();
+  if (sanitized.internalNotes) sanitized.internalNotes = sanitized.internalNotes.trim();
+
+  // Convert numeric fields
+  if (sanitized.qty !== undefined) sanitized.qty = Number(sanitized.qty);
+  if (sanitized.stdCost !== undefined) sanitized.stdCost = Number(sanitized.stdCost);
+  if (sanitized.purchaseCost !== undefined) sanitized.purchaseCost = Number(sanitized.purchaseCost);
+  if (sanitized.salePrice !== undefined) sanitized.salePrice = Number(sanitized.salePrice);
+  if (sanitized.mrp !== undefined) sanitized.mrp = Number(sanitized.mrp);
+  if (sanitized.gst !== undefined) sanitized.gst = Number(sanitized.gst);
+  if (sanitized.minStock !== undefined) sanitized.minStock = Number(sanitized.minStock);
+  if (sanitized.leadTime !== undefined) sanitized.leadTime = Number(sanitized.leadTime);
+
+  // Convert boolean fields
+  if (sanitized.internalManufacturing !== undefined) {
+    sanitized.internalManufacturing = Boolean(sanitized.internalManufacturing);
+  }
+  if (sanitized.purchase !== undefined) {
+    sanitized.purchase = Boolean(sanitized.purchase);
+  }
+
+  return sanitized;
 };
 
 export const updateItem = async (req, res) => {
