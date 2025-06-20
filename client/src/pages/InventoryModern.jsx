@@ -123,8 +123,14 @@ export default function InventoryModern() {
       return response;
     },
     onSuccess: (data) => {
+      // Immediately invalidate and refetch all related queries
       queryClient.invalidateQueries({ queryKey: ['/api/items'] });
       queryClient.invalidateQueries({ queryKey: ['/api/inventory/stats'] });
+      
+      // Force immediate refetch to update UI
+      queryClient.refetchQueries({ queryKey: ['/api/items'] });
+      queryClient.refetchQueries({ queryKey: ['/api/inventory/stats'] });
+      
       setIsAddModalOpen(false);
       toast({
         title: "Success",
@@ -132,7 +138,6 @@ export default function InventoryModern() {
       });
     },
     onError: (error) => {
-      // Error handling is now done in the form component
       throw error;
     }
   });
@@ -143,8 +148,14 @@ export default function InventoryModern() {
       return response;
     },
     onSuccess: (data) => {
+      // Immediately invalidate and refetch all related queries
       queryClient.invalidateQueries({ queryKey: ['/api/items'] });
       queryClient.invalidateQueries({ queryKey: ['/api/inventory/stats'] });
+      
+      // Force immediate refetch to update UI
+      queryClient.refetchQueries({ queryKey: ['/api/items'] });
+      queryClient.refetchQueries({ queryKey: ['/api/inventory/stats'] });
+      
       setIsEditModalOpen(false);
       setSelectedItem(null);
       toast({
@@ -153,7 +164,6 @@ export default function InventoryModern() {
       });
     },
     onError: (error) => {
-      // Error handling is now done in the form component
       throw error;
     }
   });
