@@ -106,20 +106,17 @@ const itemSchema = new mongoose.Schema({
     min: 0,
     default: 0
   },
+  customerCategory: {
+    type: String,
+    trim: true
+  },
   tags: [{
     type: String,
     trim: true
   }],
   customerPrices: [{
-    category: {
-      type: String,
-      required: true
-    },
-    price: {
-      type: Number,
-      required: true,
-      min: 0
-    }
+    category: String,
+    price: Number
   }]
 }, {
   timestamps: true

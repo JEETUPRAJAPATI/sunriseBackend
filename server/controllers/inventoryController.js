@@ -310,6 +310,17 @@ const sanitizeItemData = (data) => {
     sanitized.purchase = Boolean(sanitized.purchase);
   }
 
+  // Handle arrays
+  if (sanitized.tags && Array.isArray(sanitized.tags)) {
+    sanitized.tags = sanitized.tags.filter(tag => tag && tag.trim()).map(tag => tag.trim());
+  }
+  if (sanitized.customerPrices && Array.isArray(sanitized.customerPrices)) {
+    sanitized.customerPrices = sanitized.customerPrices.map(cp => ({
+      category: cp.category ? cp.category.trim() : '',
+      price: Number(cp.price) || 0
+    }));
+  }
+
   return sanitized;
 };
 

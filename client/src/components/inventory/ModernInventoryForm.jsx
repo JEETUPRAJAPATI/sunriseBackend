@@ -38,7 +38,7 @@ const itemSchema = z.object({
   name: z.string().min(2, 'Item name must be at least 2 characters').max(100, 'Name must be less than 100 characters'),
   description: z.string().optional(),
   category: z.string().min(1, 'Category is required'),
-  customerCategory: z.string().min(1, 'Customer category is required'),
+  customerCategory: z.string().optional(),
   code: z.string().optional(),
   qty: z.number().min(0, 'Quantity cannot be negative').default(0),
   unit: z.string().min(1, 'Unit is required'),
