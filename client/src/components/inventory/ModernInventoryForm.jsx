@@ -82,6 +82,7 @@ export default function ModernInventoryForm({
 
   const form = useForm({
     resolver: zodResolver(itemSchema),
+    mode: 'onChange',
     defaultValues: {
       name: '',
       description: '',
@@ -183,11 +184,39 @@ export default function ModernInventoryForm({
 
   const handleSubmit = async (data) => {
     setIsSubmitting(true);
+    
+    // Log form data for debugging
+    console.log('Form data being submitted:', data);
+    
     try {
       const result = await onSubmit(data);
       
       // Clear form and close modal on success
-      form.reset();
+      form.reset({
+        name: '',
+        description: '',
+        category: '',
+        customerCategory: '',
+        code: '',
+        qty: 0,
+        unit: 'pieces',
+        stdCost: 0,
+        salePrice: 0,
+        type: 'Product',
+        importance: 'Normal',
+        subCategory: '',
+        batch: '',
+        store: '',
+        purchaseCost: 0,
+        hsn: '',
+        gst: 0,
+        mrp: 0,
+        internalManufacturing: false,
+        purchase: true,
+        internalNotes: '',
+        minStock: 0,
+        leadTime: 0,
+      });
       setSelectedCategory('');
       onClose();
       

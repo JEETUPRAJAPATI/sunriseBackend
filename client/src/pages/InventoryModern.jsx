@@ -37,6 +37,7 @@ import {
 
 // Import our new components
 import ModernInventoryForm from '@/components/inventory/ModernInventoryForm';
+import InventoryFormTest from '@/components/inventory/InventoryFormTest';
 import InventoryTable from '@/components/inventory/InventoryTable';
 import InventoryFilters from '@/components/inventory/InventoryFilters';
 import InventoryStats, { InventoryTypeBreakdown } from '@/components/inventory/InventoryStats';
@@ -123,13 +124,17 @@ export default function InventoryModern() {
       return response;
     },
     onSuccess: (data) => {
-      // Immediately invalidate and refetch all related queries
+      console.log('Item created successfully:', data);
+      
+      // Force immediate query refetch
       queryClient.invalidateQueries({ queryKey: ['/api/items'] });
       queryClient.invalidateQueries({ queryKey: ['/api/inventory/stats'] });
       
-      // Force immediate refetch to update UI
-      queryClient.refetchQueries({ queryKey: ['/api/items'] });
-      queryClient.refetchQueries({ queryKey: ['/api/inventory/stats'] });
+      // Additional forced refetch
+      setTimeout(() => {
+        queryClient.refetchQueries({ queryKey: ['/api/items'] });
+        queryClient.refetchQueries({ queryKey: ['/api/inventory/stats'] });
+      }, 100);
       
       setIsAddModalOpen(false);
       toast({
@@ -148,13 +153,17 @@ export default function InventoryModern() {
       return response;
     },
     onSuccess: (data) => {
-      // Immediately invalidate and refetch all related queries
+      console.log('Item updated successfully:', data);
+      
+      // Force immediate query refetch
       queryClient.invalidateQueries({ queryKey: ['/api/items'] });
       queryClient.invalidateQueries({ queryKey: ['/api/inventory/stats'] });
       
-      // Force immediate refetch to update UI
-      queryClient.refetchQueries({ queryKey: ['/api/items'] });
-      queryClient.refetchQueries({ queryKey: ['/api/inventory/stats'] });
+      // Additional forced refetch
+      setTimeout(() => {
+        queryClient.refetchQueries({ queryKey: ['/api/items'] });
+        queryClient.refetchQueries({ queryKey: ['/api/inventory/stats'] });
+      }, 100);
       
       setIsEditModalOpen(false);
       setSelectedItem(null);
@@ -451,8 +460,8 @@ export default function InventoryModern() {
         </TabsContent>
       </Tabs>
 
-      {/* Add Item Modal */}
-      <ModernInventoryForm
+      {/* Add Item Modal - Using Test Form */}
+      <InventoryFormTest
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         categories={categories}
@@ -461,8 +470,8 @@ export default function InventoryModern() {
         isLoading={createItemMutation.isPending}
       />
 
-      {/* Edit Item Modal */}
-      <ModernInventoryForm
+      {/* Edit Item Modal - Using Test Form */}
+      <InventoryFormTest
         isOpen={isEditModalOpen}
         onClose={() => {
           setIsEditModalOpen(false);
