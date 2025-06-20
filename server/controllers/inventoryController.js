@@ -319,36 +319,72 @@ export const updateItem = async (req, res) => {
     }
 
     const { id } = req.params;
-    const updateData = req.body;
+    const itemData = req.body;
 
-    const item = await Item.findById(id);
+    // Enhanced validation
+    const validation = validateItemData(itemData);
+    if (!validation.isValid) {
+      return res.status(400).json({ 
+        message: 'Validation failed',
+        errors: validation.errors 
+      });
+    }
+
+    // Check if code is being changed and if it already exists
+    if (itemData.code && itemData.code.trim() !== '') {
+      const existingItem = await Item.findOne({ 
+        code: itemData.code.trim(), 
+        _id: { $ne: id } 
+      });
+      if (existingItem) {
+        return res.status(400).json({ 
+          message: 'Validation failed',
+          errors: { code: 'Item code already exists' }
+        });
+      }
+    }
+
+    // Sanitize and prepare data
+    const sanitizedData = sanitizeItemData(itemData);
+    
+    const item = await Item.findByIdAndUpdate(
+      id,
+      sanitizedData,
+      { new: true, runValidators: true }
+    );
+
     if (!item) {
       return res.status(404).json({ message: 'Item not found' });
     }
 
-    // Check if code is being changed and if it already exists
-    if (updateData.code && updateData.code !== item.code) {
-      const existingItem = await Item.findOne({ code: updateData.code });
-      if (existingItem) {
-        return res.status(400).json({ message: 'Item code already exists' });
-      }
-    }
-
-    const updatedItem = await Item.findByIdAndUpdate(
-      id,
-      updateData,
-      { new: true, runValidators: true }
-    );
-
     res.json({
       message: 'Item updated successfully',
-      item: updatedItem
+      item
     });
   } catch (error) {
     console.error('Update item error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern)[0];
+      res.status(400).json({ 
+        message: 'Validation failed',
+        errors: { [field]: `${field} already exists` }
+      });
+    } else if (error.name === 'ValidationError') {
+      const errors = {};
+      Object.keys(error.errors).forEach(key => {
+        errors[key] = error.errors[key].message;
+      });
+      res.status(400).json({ 
+        message: 'Validation failed',
+        errors 
+      });
+    } else {
+      res.status(500).json({ message: 'Internal server error' });
+    }
   }
 };
+
+
 
 export const deleteItem = async (req, res) => {
   try {

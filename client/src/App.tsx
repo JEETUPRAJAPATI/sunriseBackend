@@ -9,7 +9,7 @@ import NotFound from "@/pages/not-found";
 import DemoAccounts from "@/pages/DemoAccounts";
 import Dashboard from "@/pages/Dashboard";
 import UserManagement from "@/pages/UserManagement";
-import Inventory from "@/pages/Inventory";
+import InventoryModern from "@/pages/InventoryModern";
 import Profile from "@/pages/Profile";
 import MainLayout from "@/components/layout/MainLayout";
 
@@ -43,7 +43,7 @@ function Router() {
     <Switch>
       <Route path="/profile" component={() => <ProtectedRoute component={Profile} />} />
       <Route path="/user-management" component={() => <ProtectedRoute component={UserManagement} />} />
-      <Route path="/inventory" component={() => <ProtectedRoute component={Inventory} />} />
+      <Route path="/inventory" component={() => <ProtectedRoute component={InventoryModern} />} />
       <Route path="/dashboard" component={() => <ProtectedRoute component={Dashboard} />} />
       <Route path="/" component={() => <ProtectedRoute component={Dashboard} />} />
       <Route component={NotFound} />
