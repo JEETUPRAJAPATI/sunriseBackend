@@ -6,11 +6,12 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-i
 const authenticateToken = async (req, res, next) => {
   try {
     const authHeader = req.header('Authorization');
-    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : req.cookies?.token;
 
-    if (!token) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ message: 'Access denied. No token provided.' });
     }
+
+    const token = authHeader.slice(7);
 
     try {
       const decoded = jwt.verify(token, JWT_SECRET);

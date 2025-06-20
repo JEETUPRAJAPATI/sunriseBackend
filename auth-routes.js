@@ -1,5 +1,4 @@
 import express from 'express';
-import cookieParser from 'cookie-parser';
 import User from './models/User.js';
 import { generateToken, authenticateToken } from './middleware/auth.js';
 import { getUserModules } from './utils/permissions.js';
@@ -158,8 +157,7 @@ router.get('/auth/me', authenticateToken, async (req, res) => {
 
 // Logout route
 router.post('/auth/logout', (req, res) => {
-  // Clear cookie for backward compatibility
-  res.clearCookie('token');
+  // Client handles token removal from localStorage
   res.json({ message: 'Logged out successfully', success: true });
 });
 
