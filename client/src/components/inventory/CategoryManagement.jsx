@@ -62,43 +62,56 @@ function SubcategoryInput({ subcategories, setSubcategories }) {
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          Subcategories (Optional)
-        </Label>
+        <div>
+          <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Subcategories
+          </Label>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Add subcategories to organize your products better
+          </p>
+        </div>
         <Button
           type="button"
           onClick={addSubcategory}
           size="sm"
           variant="outline"
-          className="h-8 px-3 text-xs"
+          className="h-8 px-3 text-xs border-blue-300 text-blue-700 hover:bg-blue-50 dark:border-blue-600 dark:text-blue-300"
         >
           <Plus className="h-3 w-3 mr-1" />
           Add Subcategory
         </Button>
       </div>
-      {subcategories.length > 0 && (
-        <div className="space-y-2">
+      
+      {subcategories.length > 0 ? (
+        <div className="space-y-2 max-h-32 overflow-y-auto">
           {subcategories.map((subcategory, index) => (
-            <div key={index} className="flex gap-2">
-              <Input
-                value={subcategory}
-                onChange={(e) => updateSubcategory(index, e.target.value)}
-                placeholder={`Subcategory ${index + 1}`}
-                className="flex-1 h-8 text-sm"
-              />
+            <div key={index} className="flex gap-2 items-center">
+              <div className="flex-1">
+                <Input
+                  value={subcategory}
+                  onChange={(e) => updateSubcategory(index, e.target.value)}
+                  placeholder={`Subcategory ${index + 1} name`}
+                  className="h-8 text-sm border-gray-300 dark:border-gray-600"
+                />
+              </div>
               <Button
                 type="button"
                 onClick={() => removeSubcategory(index)}
                 size="sm"
                 variant="ghost"
                 className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+                title="Remove subcategory"
               >
                 <X className="h-3 w-3" />
               </Button>
             </div>
           ))}
+        </div>
+      ) : (
+        <div className="text-center py-4 text-gray-500 dark:text-gray-400 text-sm border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg">
+          No subcategories added yet. Click "Add Subcategory" to start.
         </div>
       )}
     </div>
@@ -114,11 +127,13 @@ function CategoryFormModal({ isOpen, onClose, editingCategory, onSubmit, isLoadi
   const handleSubmit = (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
+    const filteredSubcategories = subcategories.filter(sub => sub && sub.trim() !== '');
     const data = {
       name: formData.get('name'),
       description: formData.get('description'),
-      subcategories: subcategories.filter(sub => sub.trim() !== '')
+      subcategories: filteredSubcategories
     };
+    console.log('Submitting category data:', data);
     onSubmit(data);
   };
 
@@ -129,8 +144,10 @@ function CategoryFormModal({ isOpen, onClose, editingCategory, onSubmit, isLoadi
 
   // Update subcategories when editingCategory changes
   React.useEffect(() => {
-    if (editingCategory?.subcategories) {
-      setSubcategories(editingCategory.subcategories);
+    if (editingCategory) {
+      const existingSubcategories = editingCategory.subcategories || [];
+      console.log('Loading subcategories for edit:', existingSubcategories);
+      setSubcategories(existingSubcategories);
     } else {
       setSubcategories([]);
     }
@@ -175,7 +192,9 @@ function CategoryFormModal({ isOpen, onClose, editingCategory, onSubmit, isLoadi
                 className="mt-1 border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400"
               />
             </div>
-            <SubcategoryInput subcategories={subcategories} setSubcategories={setSubcategories} />
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+              <SubcategoryInput subcategories={subcategories} setSubcategories={setSubcategories} />
+            </div>
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
             <Button 

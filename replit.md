@@ -240,7 +240,17 @@ The system supports two database configurations:
 - Added proper tooltips for action buttons and improved accessibility
 - Optimized layout for full-width content display without sidebar constraints
 
-**Current Status**: Complete ERP system with streamlined inventory management interface featuring enhanced modal-based category management, clean table layouts, dynamic subcategory handling, comprehensive CRUD operations, and optimized user experience without unnecessary navigation elements.
+**June 20, 2025 - Fixed Subcategory Database Storage and Display Issues**
+- Fixed database schema inconsistency between `subCategories` and `subcategories` fields
+- Enhanced backend category controllers to properly handle subcategory data with validation and filtering
+- Improved frontend subcategory state management with proper useEffect handling and console logging
+- Enhanced subcategory input component with better visual design and user feedback
+- Added proper data filtering to remove empty subcategories before database storage
+- Fixed category form submission to include all required fields (name, description, subcategories)
+- Added comprehensive logging for debugging subcategory creation and editing operations
+- Improved visual hierarchy with sectioned subcategory management and scrollable input areas
+
+**Current Status**: Complete ERP system with fully functional subcategory management, proper database storage and retrieval, enhanced modal-based category interface, and comprehensive CRUD operations with real-time state synchronization and visual feedback.
 
 ## User Preferences
 

@@ -131,7 +131,11 @@ const categorySchema = new mongoose.Schema({
     unique: true,
     trim: true
   },
-  subCategories: [{
+  description: {
+    type: String,
+    trim: true
+  },
+  subcategories: [{
     type: String,
     trim: true
   }]
