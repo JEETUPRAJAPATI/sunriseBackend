@@ -147,7 +147,7 @@ export default function ModernInventoryUI() {
   const [sortBy, setSortBy] = useState('name');
 
   // Data fetching with React Query
-  const { data: items = [], isLoading: itemsLoading } = useQuery({
+  const { data: itemsData, isLoading: itemsLoading } = useQuery({
     queryKey: ['/api/items'],
   });
 
@@ -155,13 +155,20 @@ export default function ModernInventoryUI() {
     queryKey: ['/api/inventory/stats'],
   });
 
-  const { data: categories = [] } = useQuery({
+  // Extract items array from API response
+  const items = Array.isArray(itemsData?.items) ? itemsData.items : [];
+
+  const { data: categoriesData } = useQuery({
     queryKey: ['/api/categories'],
   });
 
-  const { data: customerCategories = [] } = useQuery({
+  const { data: customerCategoriesData } = useQuery({
     queryKey: ['/api/customer-categories'],
   });
+
+  // Extract arrays from API response
+  const categories = Array.isArray(categoriesData?.categories) ? categoriesData.categories : [];
+  const customerCategories = Array.isArray(customerCategoriesData?.customerCategories) ? customerCategoriesData.customerCategories : [];
 
   // Mutations for CRUD operations
   const createItemMutation = useMutation({
@@ -327,8 +334,8 @@ export default function ModernInventoryUI() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Categories</SelectItem>
-                      {categories.map((category) => (
-                        <SelectItem key={category._id} value={category.name}>
+                      {categories.length > 0 && categories.map((category) => (
+                        <SelectItem key={category._id || category.name} value={category.name}>
                           {category.name}
                         </SelectItem>
                       ))}
