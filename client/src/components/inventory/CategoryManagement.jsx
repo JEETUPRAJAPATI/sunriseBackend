@@ -19,7 +19,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
@@ -36,7 +35,6 @@ import {
   MoreHorizontal,
   Tag,
   Users,
-  FolderOpen,
   AlertTriangle
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
@@ -78,6 +76,7 @@ export default function CategoryManagement({
   const [editingCategory, setEditingCategory] = useState(null);
   const [editingCustomerCategory, setEditingCustomerCategory] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, item: null, type: null });
+  const [currentView, setCurrentView] = useState('categories');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -186,210 +185,208 @@ export default function CategoryManagement({
     }
   };
 
+  const renderCategoriesView = () => (
+    <Card className="shadow-sm border-gray-200 dark:border-gray-700">
+      <CardHeader className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-950/20 dark:to-blue-900/30 border-b border-blue-200 dark:border-blue-800">
+        <div className="flex justify-between items-center">
+          <CardTitle className="flex items-center gap-2 text-blue-900 dark:text-blue-100">
+            <Tag className="h-5 w-5" />
+            Categories
+          </CardTitle>
+          <Button 
+            onClick={() => setShowCategoryForm(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Category
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="p-6">
+        <div className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-gray-50 dark:bg-gray-800/50">
+                <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Name</TableHead>
+                <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Description</TableHead>
+                <TableHead className="w-[100px] font-semibold text-gray-900 dark:text-gray-100">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {categoriesLoading ? (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center py-8">
+                    Loading categories...
+                  </TableCell>
+                </TableRow>
+              ) : categories.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                    No categories found. Add your first category to get started.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                categories.map((category, index) => (
+                  <TableRow 
+                    key={category._id}
+                    className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${
+                      index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50/50 dark:bg-gray-800/20'
+                    }`}
+                  >
+                    <TableCell className="font-medium text-gray-900 dark:text-gray-100 py-4">
+                      {category.name}
+                    </TableCell>
+                    <TableCell className="text-sm text-gray-500 dark:text-gray-400 py-4">
+                      {category.description || 'No description'}
+                    </TableCell>
+                    <TableCell className="py-4">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-40">
+                          <DropdownMenuItem 
+                            onClick={() => setEditingCategory(category)}
+                            className="hover:bg-green-50 dark:hover:bg-green-950/30"
+                          >
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleDelete(category, 'category')}
+                            className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 dark:text-red-400"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const renderCustomerCategoriesView = () => (
+    <Card className="shadow-sm border-gray-200 dark:border-gray-700">
+      <CardHeader className="bg-gradient-to-r from-green-50 to-green-100 dark:from-green-950/20 dark:to-green-900/30 border-b border-green-200 dark:border-green-800">
+        <div className="flex justify-between items-center">
+          <CardTitle className="flex items-center gap-2 text-green-900 dark:text-green-100">
+            <Users className="h-5 w-5" />
+            Customer Categories
+          </CardTitle>
+          <Button 
+            onClick={() => setShowCustomerCategoryForm(true)}
+            className="bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Customer Category
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="p-6">
+        <div className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-gray-50 dark:bg-gray-800/50">
+                <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Name</TableHead>
+                <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Description</TableHead>
+                <TableHead className="w-[100px] font-semibold text-gray-900 dark:text-gray-100">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {customerCategoriesLoading ? (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center py-8">
+                    Loading customer categories...
+                  </TableCell>
+                </TableRow>
+              ) : customerCategories.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                    No customer categories found. Add your first customer category to get started.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                customerCategories.map((category, index) => (
+                  <TableRow 
+                    key={category._id}
+                    className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${
+                      index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50/50 dark:bg-gray-800/20'
+                    }`}
+                  >
+                    <TableCell className="font-medium text-gray-900 dark:text-gray-100 py-4">
+                      {category.name}
+                    </TableCell>
+                    <TableCell className="text-sm text-gray-500 dark:text-gray-400 py-4">
+                      {category.description || 'No description'}
+                    </TableCell>
+                    <TableCell className="py-4">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-40">
+                          <DropdownMenuItem 
+                            onClick={() => setEditingCustomerCategory(category)}
+                            className="hover:bg-green-50 dark:hover:bg-green-950/30"
+                          >
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleDelete(category, 'customer')}
+                            className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 dark:text-red-400"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="categories" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-          <TabsTrigger 
-            value="categories" 
-            className="flex items-center gap-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-          >
-            <Tag className="h-4 w-4" />
-            Product Categories
-          </TabsTrigger>
-          <TabsTrigger 
-            value="customer-categories" 
-            className="flex items-center gap-2 data-[state=active]:bg-green-600 data-[state=active]:text-white"
-          >
-            <Users className="h-4 w-4" />
-            Customer Categories
-          </TabsTrigger>
-        </TabsList>
+      {/* Navigation Buttons */}
+      <div className="flex gap-4">
+        <Button 
+          variant={currentView === 'categories' ? 'default' : 'outline'}
+          onClick={() => setCurrentView('categories')}
+          className={currentView === 'categories' ? 'bg-blue-600 text-white' : ''}
+        >
+          <Tag className="h-4 w-4 mr-2" />
+          Categories
+        </Button>
+        <Button 
+          variant={currentView === 'customer-categories' ? 'default' : 'outline'}
+          onClick={() => setCurrentView('customer-categories')}
+          className={currentView === 'customer-categories' ? 'bg-green-600 text-white' : ''}
+        >
+          <Users className="h-4 w-4 mr-2" />
+          Customer Categories
+        </Button>
+      </div>
 
-        <TabsContent value="categories">
-          <Card className="shadow-sm border-gray-200 dark:border-gray-700">
-            <CardHeader className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-950/20 dark:to-blue-900/30 border-b border-blue-200 dark:border-blue-800">
-              <div className="flex justify-between items-center">
-                <CardTitle className="flex items-center gap-2 text-blue-900 dark:text-blue-100">
-                  <Tag className="h-5 w-5" />
-                  Product Categories
-                </CardTitle>
-                <Button 
-                  onClick={() => setShowCategoryForm(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Category
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-gray-50 dark:bg-gray-800/50">
-                      <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Name</TableHead>
-                      <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Description</TableHead>
-                      <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Items Count</TableHead>
-                      <TableHead className="w-[100px] font-semibold text-gray-900 dark:text-gray-100">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {categoriesLoading ? (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center py-8">
-                          Loading categories...
-                        </TableCell>
-                      </TableRow>
-                    ) : categories.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                          No categories found. Add your first category to get started.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      categories.map((category, index) => (
-                        <TableRow 
-                          key={category._id}
-                          className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${
-                            index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50/50 dark:bg-gray-800/20'
-                          }`}
-                        >
-                          <TableCell className="font-medium text-gray-900 dark:text-gray-100 py-4">
-                            {category.name}
-                          </TableCell>
-                          <TableCell className="text-sm text-gray-500 dark:text-gray-400 py-4">
-                            {category.description || 'No description'}
-                          </TableCell>
-                          <TableCell className="py-4">
-                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-800">
-                              {category.itemCount || 0} items
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="py-4">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-40">
-                                <DropdownMenuItem 
-                                  onClick={() => setEditingCategory(category)}
-                                  className="hover:bg-green-50 dark:hover:bg-green-950/30"
-                                >
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Edit Category
-                                </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                  onClick={() => handleDelete(category, 'category')}
-                                  className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 dark:text-red-400"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="customer-categories">
-          <Card className="shadow-sm border-gray-200 dark:border-gray-700">
-            <CardHeader className="bg-gradient-to-r from-green-50 to-green-100 dark:from-green-950/20 dark:to-green-900/30 border-b border-green-200 dark:border-green-800">
-              <div className="flex justify-between items-center">
-                <CardTitle className="flex items-center gap-2 text-green-900 dark:text-green-100">
-                  <Users className="h-5 w-5" />
-                  Customer Categories
-                </CardTitle>
-                <Button 
-                  onClick={() => setShowCustomerCategoryForm(true)}
-                  className="bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Customer Category
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-gray-50 dark:bg-gray-800/50">
-                      <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Name</TableHead>
-                      <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Description</TableHead>
-                      <TableHead className="w-[100px] font-semibold text-gray-900 dark:text-gray-100">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {customerCategoriesLoading ? (
-                      <TableRow>
-                        <TableCell colSpan={3} className="text-center py-8">
-                          Loading customer categories...
-                        </TableCell>
-                      </TableRow>
-                    ) : customerCategories.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
-                          No customer categories found. Add your first customer category to get started.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      customerCategories.map((category, index) => (
-                        <TableRow 
-                          key={category._id}
-                          className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${
-                            index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50/50 dark:bg-gray-800/20'
-                          }`}
-                        >
-                          <TableCell className="font-medium text-gray-900 dark:text-gray-100 py-4">
-                            {category.name}
-                          </TableCell>
-                          <TableCell className="text-sm text-gray-500 dark:text-gray-400 py-4">
-                            {category.description || 'No description'}
-                          </TableCell>
-                          <TableCell className="py-4">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-40">
-                                <DropdownMenuItem 
-                                  onClick={() => setEditingCustomerCategory(category)}
-                                  className="hover:bg-green-50 dark:hover:bg-green-950/30"
-                                >
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Edit Category
-                                </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                  onClick={() => handleDelete(category, 'customer')}
-                                  className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 dark:text-red-400"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      {/* Content */}
+      {currentView === 'categories' ? renderCategoriesView() : renderCustomerCategoriesView()}
 
       {/* Add Category Dialog */}
       <Dialog open={showCategoryForm} onOpenChange={setShowCategoryForm}>

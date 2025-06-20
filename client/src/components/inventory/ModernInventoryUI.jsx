@@ -3,30 +3,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { 
-  showSmartToast, 
-  showSuccessToast, 
-  showWarningToast,
-  showNetworkStatusToast 
-} from '@/lib/toast-utils';
-import { useNetworkStatus } from '@/hooks/useNetworkStatus';
-import ModernInventoryForm from './ModernInventoryForm';
-import ViewItemModal from './ViewItemModal';
-import DeleteConfirmDialog from './DeleteConfirmDialog';
-import CategoryManagement from './CategoryManagement';
-import { apiRequest } from '@/lib/queryClient';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+  Card, 
+  CardContent, 
+  CardHeader, 
+  CardTitle 
 } from '@/components/ui/card';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import {
   Table,
   TableBody,
@@ -42,6 +23,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -68,6 +55,14 @@ import {
   Users
 } from 'lucide-react';
 
+import ModernInventoryForm from './ModernInventoryForm';
+import ViewItemModal from './ViewItemModal';
+import DeleteConfirmDialog from './DeleteConfirmDialog';
+import CategoryManagement from './CategoryManagement';
+
+import { apiRequest } from '@/lib/queryClient';
+import { showSmartToast } from '@/lib/toast-utils';
+
 // Modern Stats Component
 function ModernStats({ stats, isLoading }) {
   const statsCards = [
@@ -81,7 +76,7 @@ function ModernStats({ stats, isLoading }) {
     },
     {
       title: 'Total Value',
-      value: `₹${(stats?.overview?.totalValue || 0).toLocaleString()}`,
+      value: `₹${stats?.overview?.totalValue?.toLocaleString() || 0}`,
       icon: DollarSign,
       color: 'text-green-600',
       bgColor: 'bg-green-50 dark:bg-green-900/20',
@@ -91,8 +86,8 @@ function ModernStats({ stats, isLoading }) {
       title: 'Low Stock',
       value: stats?.overview?.lowStockItems || 0,
       icon: AlertTriangle,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-50 dark:bg-orange-900/20',
+      color: 'text-red-600',
+      bgColor: 'bg-red-50 dark:bg-red-900/20',
       change: '-3%'
     },
     {
@@ -133,11 +128,9 @@ function ModernStats({ stats, isLoading }) {
   );
 }
 
-// Main component
 export default function ModernInventoryUI() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { isOnline } = useNetworkStatus();
   const queryClient = useQueryClient();
   
   // State management
@@ -145,7 +138,6 @@ export default function ModernInventoryUI() {
   const [editingItem, setEditingItem] = useState(null);
   const [viewItem, setViewItem] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, item: null });
-  const [activeTab, setActiveTab] = useState('inventory');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('name');
@@ -161,9 +153,6 @@ export default function ModernInventoryUI() {
     queryKey: ['/api/inventory/stats'],
   });
 
-  // Extract items array from API response
-  const items = Array.isArray(itemsData?.items) ? itemsData.items : [];
-
   const { data: categoriesData } = useQuery({
     queryKey: ['/api/categories'],
   });
@@ -173,21 +162,40 @@ export default function ModernInventoryUI() {
   });
 
   // Extract arrays from API response
+  const items = Array.isArray(itemsData?.items) ? itemsData.items : [];
   const categories = Array.isArray(categoriesData?.categories) ? categoriesData.categories : [];
   const customerCategories = Array.isArray(customerCategoriesData?.customerCategories) ? customerCategoriesData.customerCategories : [];
 
-  // Mutations for CRUD operations
-  const createItemMutation = useMutation({
-    mutationFn: (itemData) => apiRequest('POST', '/api/items', itemData),
+  // Mutations
+  const deleteItemMutation = useMutation({
+    mutationFn: (id) => apiRequest('DELETE', `/api/items/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/items'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/inventory/stats'] });
-      showSuccessToast('Item Created', 'New inventory item added successfully');
-      setIsFormOpen(false);
-      setEditingItem(null);
+      queryClient.invalidateQueries(['/api/items']);
+      queryClient.invalidateQueries(['/api/inventory/stats']);
+      setDeleteConfirm({ isOpen: false, item: null });
+      toast({
+        title: "Item Deleted",
+        description: "Inventory item has been deleted successfully",
+      });
     },
     onError: (error) => {
-      console.error('Create item error:', error);
+      showSmartToast(error, 'Delete Item');
+    }
+  });
+
+  const createItemMutation = useMutation({
+    mutationFn: (data) => apiRequest('POST', '/api/items', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['/api/items']);
+      queryClient.invalidateQueries(['/api/inventory/stats']);
+      setIsFormOpen(false);
+      setEditingItem(null);
+      toast({
+        title: "Item Created",
+        description: "New inventory item has been created successfully",
+      });
+    },
+    onError: (error) => {
       showSmartToast(error, 'Create Item');
     }
   });
@@ -195,61 +203,36 @@ export default function ModernInventoryUI() {
   const updateItemMutation = useMutation({
     mutationFn: ({ id, data }) => apiRequest('PUT', `/api/items/${id}`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/items'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/inventory/stats'] });
-      showSuccessToast('Item Updated', 'Inventory item updated successfully');
+      queryClient.invalidateQueries(['/api/items']);
+      queryClient.invalidateQueries(['/api/inventory/stats']);
       setIsFormOpen(false);
       setEditingItem(null);
+      toast({
+        title: "Item Updated",
+        description: "Inventory item has been updated successfully",
+      });
     },
     onError: (error) => {
-      console.error('Update item error:', error);
       showSmartToast(error, 'Update Item');
     }
   });
 
-  const deleteItemMutation = useMutation({
-    mutationFn: (id) => apiRequest('DELETE', `/api/items/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/items'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/inventory/stats'] });
-      showSuccessToast('Item Deleted', 'Inventory item deleted successfully');
-      setDeleteConfirm({ isOpen: false, item: null });
-    },
-    onError: (error) => {
-      console.error('Delete item error:', error);
-      showSmartToast(error, 'Delete Item');
+  // Handlers
+  const handleFormSubmit = (data) => {
+    if (editingItem) {
+      updateItemMutation.mutate({ id: editingItem._id, data });
+    } else {
+      createItemMutation.mutate(data);
     }
-  });
+  };
 
-  // Network status monitoring
-  useEffect(() => {
-    showNetworkStatusToast(isOnline);
-  }, [isOnline]);
-
-  // Form submission handler
-  const handleFormSubmit = async (formData) => {
-    try {
-      if (editingItem) {
-        await updateItemMutation.mutateAsync({ 
-          id: editingItem._id, 
-          data: formData 
-        });
-      } else {
-        await createItemMutation.mutateAsync(formData);
-      }
-    } catch (error) {
-      console.error('Form submission error:', error);
-      showSmartToast(error, 'Form Submission');
-    }
+  const handleView = (item) => {
+    setViewItem(item);
   };
 
   const handleEdit = (item) => {
     setEditingItem(item);
     setIsFormOpen(true);
-  };
-
-  const handleView = (item) => {
-    setViewItem(item);
   };
 
   const handleDelete = (item) => {
@@ -357,25 +340,35 @@ export default function ModernInventoryUI() {
         </CardContent>
       </Card>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-          <TabsTrigger 
-            value="inventory" 
-            className="flex items-center gap-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+      {/* Main Content Tabs */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Navigation Buttons */}
+        <div className="lg:col-span-1 space-y-2">
+          <Button 
+            variant="ghost" 
+            className="w-full justify-start text-left h-12 bg-blue-600 text-white hover:bg-blue-700"
           >
-            <Package className="h-4 w-4" />
+            <Package className="h-5 w-5 mr-3" />
             Inventory Items
-          </TabsTrigger>
-          <TabsTrigger 
-            value="categories" 
-            className="flex items-center gap-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+          </Button>
+          <Button 
+            variant="ghost" 
+            className="w-full justify-start text-left h-12 hover:bg-blue-50 dark:hover:bg-blue-950/30"
           >
-            <Tag className="h-4 w-4" />
+            <Tag className="h-5 w-5 mr-3" />
             Categories
-          </TabsTrigger>
-        </TabsList>
+          </Button>
+          <Button 
+            variant="ghost" 
+            className="w-full justify-start text-left h-12 hover:bg-green-50 dark:hover:bg-green-950/30"
+          >
+            <Users className="h-5 w-5 mr-3" />
+            Customer Categories
+          </Button>
+        </div>
 
-        <TabsContent value="inventory">
+        {/* Content Area */}
+        <div className="lg:col-span-3">
           <Card className="shadow-sm border-gray-200 dark:border-gray-700">
             <CardHeader className="bg-gray-50 dark:bg-gray-800/50">
               <CardTitle className="flex items-center gap-2 text-gray-800 dark:text-gray-200">
@@ -443,116 +436,107 @@ export default function ModernInventoryUI() {
                         <TableHead className="w-[100px] font-semibold text-gray-900 dark:text-gray-100">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
-                  <TableBody>
-                    {itemsLoading ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8">
-                          Loading items...
-                        </TableCell>
-                      </TableRow>
-                    ) : filteredItems.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                          No items found. Add your first inventory item to get started.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredItems.map((item, index) => (
-                        <TableRow 
-                          key={item._id} 
-                          className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${
-                            index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50/50 dark:bg-gray-800/20'
-                          }`}
-                        >
-                          <TableCell className="py-4">
-                            <div>
-                              <div className="font-medium text-gray-900 dark:text-gray-100">{item.name}</div>
-                              <div className="text-sm text-gray-500 dark:text-gray-400">{item.code}</div>
-                            </div>
-                          </TableCell>
-                          <TableCell className="py-4">
-                            <div>
-                              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-800">
-                                {item.category}
-                              </Badge>
-                              {item.subCategory && (
-                                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                  {item.subCategory}
-                                </div>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="py-4">
-                            <div>
-                              <div className="font-medium text-gray-900 dark:text-gray-100">{item.qty} {item.unit}</div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400">
-                                Min: {item.minStock} {item.unit}
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell className="py-4">
-                            <span className="font-medium text-green-600 dark:text-green-400">
-                              ₹{item.salePrice?.toLocaleString() || 0}
-                            </span>
-                          </TableCell>
-                          <TableCell className="py-4">
-                            <Badge 
-                              variant={(item.qty || 0) <= (item.minStock || 0) ? 'destructive' : 'default'}
-                              className={
-                                (item.qty || 0) <= (item.minStock || 0) 
-                                  ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' 
-                                  : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                              }
-                            >
-                              {(item.qty || 0) <= (item.minStock || 0) ? 'Low Stock' : 'In Stock'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="py-4">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-40">
-                                <DropdownMenuItem onClick={() => handleView(item)} className="hover:bg-blue-50 dark:hover:bg-blue-950/30">
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  View Details
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleEdit(item)} className="hover:bg-green-50 dark:hover:bg-green-950/30">
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Edit Item
-                                </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                  onClick={() => handleDelete(item)}
-                                  className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 dark:text-red-400"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                    <TableBody>
+                      {itemsLoading ? (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center py-8">
+                            Loading items...
                           </TableCell>
                         </TableRow>
-                      ))
-                    )}
+                      ) : filteredItems.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                            No items found. Add your first inventory item to get started.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        filteredItems.map((item, index) => (
+                          <TableRow 
+                            key={item._id} 
+                            className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${
+                              index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50/50 dark:bg-gray-800/20'
+                            }`}
+                          >
+                            <TableCell className="py-4">
+                              <div>
+                                <div className="font-medium text-gray-900 dark:text-gray-100">{item.name}</div>
+                                <div className="text-sm text-gray-500 dark:text-gray-400">{item.code}</div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="py-4">
+                              <div>
+                                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-800">
+                                  {item.category}
+                                </Badge>
+                                {item.subCategory && (
+                                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    {item.subCategory}
+                                  </div>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell className="py-4">
+                              <div>
+                                <div className="font-medium text-gray-900 dark:text-gray-100">{item.qty} {item.unit}</div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                  Min: {item.minStock} {item.unit}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="py-4">
+                              <span className="font-medium text-green-600 dark:text-green-400">
+                                ₹{item.salePrice?.toLocaleString() || 0}
+                              </span>
+                            </TableCell>
+                            <TableCell className="py-4">
+                              <Badge 
+                                variant={(item.qty || 0) <= (item.minStock || 0) ? 'destructive' : 'default'}
+                                className={
+                                  (item.qty || 0) <= (item.minStock || 0) 
+                                    ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' 
+                                    : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                                }
+                              >
+                                {(item.qty || 0) <= (item.minStock || 0) ? 'Low Stock' : 'In Stock'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="py-4">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-40">
+                                  <DropdownMenuItem onClick={() => handleView(item)} className="hover:bg-blue-50 dark:hover:bg-blue-950/30">
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    View Details
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleEdit(item)} className="hover:bg-green-50 dark:hover:bg-green-950/30">
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Edit Item
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={() => handleDelete(item)}
+                                    className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 dark:text-red-400"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
                     </TableBody>
                   </Table>
                 </div>
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
-
-        <TabsContent value="categories">
-          <CategoryManagement 
-            showCategoryForm={showCategoryForm}
-            setShowCategoryForm={setShowCategoryForm}
-            showCustomerCategoryForm={showCustomerCategoryForm}
-            setShowCustomerCategoryForm={setShowCustomerCategoryForm}
-          />
-        </TabsContent>
-      </Tabs>
+        </div>
+      </div>
 
       <ModernInventoryForm
         isOpen={isFormOpen}
@@ -581,6 +565,13 @@ export default function ModernInventoryUI() {
         description="Are you sure you want to delete this inventory item?"
         itemName={deleteConfirm.item?.name}
         isLoading={deleteItemMutation.isPending}
+      />
+
+      <CategoryManagement 
+        showCategoryForm={showCategoryForm}
+        setShowCategoryForm={setShowCategoryForm}
+        showCustomerCategoryForm={showCustomerCategoryForm}
+        setShowCustomerCategoryForm={setShowCustomerCategoryForm}
       />
     </div>
   );
