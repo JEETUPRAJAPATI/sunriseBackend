@@ -16,7 +16,9 @@ const server = createServer(app);
 // CORS setup
 const allowedOrigins = [
   "http://localhost:5000",
-  "https://sunrisebackend-xfci.onrender.com"
+  "http://localhost:5173",
+  "https://sunrisebackend-xfci.onrender.com",
+  "sunrize.techizebuilder.com"
 ];
 
 app.use((req, res, next) => {
