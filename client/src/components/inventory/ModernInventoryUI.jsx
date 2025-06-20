@@ -2,6 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { 
+  showSmartToast, 
+  showSuccessToast, 
+  showWarningToast,
+  showLoadingToast 
+} from '@/lib/toast-utils';
 import { api } from '@/services/api';
 import {
   Card,
@@ -73,6 +79,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import ModernInventoryForm from './ModernInventoryForm';
+import ToastNotificationDemo from './ToastNotificationDemo';
 
 // Modern Stats Component
 function ModernStats({ stats, loading }) {
@@ -611,20 +618,17 @@ export default function ModernInventoryUI() {
       const response = await api.deleteItem(id);
       return response;
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/items'] });
       queryClient.invalidateQueries({ queryKey: ['/api/inventory/stats'] });
-      toast({
-        title: "Success",
-        description: "Item deleted successfully",
-      });
+      
+      showSuccessToast(
+        "Item Deleted",
+        "The item has been permanently removed from inventory"
+      );
     },
     onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.response?.data?.message || 'Failed to delete item',
-        variant: "destructive",
-      });
+      showSmartToast(error, 'Delete Item');
     }
   });
 
@@ -661,14 +665,42 @@ export default function ModernInventoryUI() {
   };
 
   const handleDeleteItem = async (id) => {
-    if (confirm('Are you sure you want to delete this item?')) {
-      await deleteItemMutation.mutateAsync(id);
+    // Find item name for better UX
+    const item = items.find(item => item._id === id);
+    const itemName = item?.name || 'this item';
+    
+    if (confirm(`Are you sure you want to delete "${itemName}"? This action cannot be undone.`)) {
+      // Show loading toast
+      const loadingToast = showLoadingToast(
+        'Deleting Item',
+        `Removing "${itemName}" from inventory...`
+      );
+      
+      try {
+        await deleteItemMutation.mutateAsync(id);
+        // Loading toast will be dismissed by the success handler
+        loadingToast.dismiss();
+      } catch (error) {
+        loadingToast.dismiss();
+        // Error is handled by the mutation's onError
+      }
     }
   };
 
-  const handleRefresh = () => {
-    refetchItems();
-    refetchStats();
+  const handleRefresh = async () => {
+    const loadingToast = showLoadingToast(
+      'Refreshing Data',
+      'Updating inventory information...'
+    );
+    
+    try {
+      await Promise.all([refetchItems(), refetchStats()]);
+      loadingToast.dismiss();
+      showSuccessToast('Data Refreshed', 'Inventory data has been updated');
+    } catch (error) {
+      loadingToast.dismiss();
+      showSmartToast(error, 'Refresh Data');
+    }
   };
 
   if (!canView) {
@@ -733,6 +765,13 @@ export default function ModernInventoryUI() {
         canEdit={canEdit}
         canDelete={canDelete}
       />
+
+      {/* Toast Demo (for development) */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mt-8">
+          <ToastNotificationDemo />
+        </div>
+      )}
 
       {/* Add Item Modal */}
       <ModernInventoryForm

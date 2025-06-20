@@ -47,6 +47,11 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { 
+  showSmartToast, 
+  showSuccessToast, 
+  showValidationToast 
+} from '@/lib/toast-utils';
 
 // Comprehensive validation schema
 const inventorySchema = z.object({
@@ -217,11 +222,11 @@ export default function ModernInventoryForm({
       setServerErrors({});
       onClose();
       
-      toast({
-        title: "Success",
-        description: `Item ${item ? 'updated' : 'created'} successfully`,
-        variant: "default",
-      });
+      showSuccessToast(
+        `Item ${item ? 'Updated' : 'Created'}`,
+        `Item "${data.name}" has been ${item ? 'updated' : 'created'} successfully`,
+        { duration: 3000 }
+      );
       
     } catch (error) {
       console.error('Form submission error:', error);
@@ -239,15 +244,8 @@ export default function ModernInventoryForm({
           });
         });
         
-        // Show summary toast
-        const errorCount = Object.keys(errors).length;
-        const fieldNames = Object.keys(errors).join(', ');
-        
-        toast({
-          title: "Validation Failed",
-          description: `Please fix ${errorCount} error${errorCount > 1 ? 's' : ''} in: ${fieldNames}`,
-          variant: "destructive",
-        });
+        // Show smart validation toast
+        showValidationToast(errors, `${item ? 'Edit' : 'Add'} Item Form`);
         
         // Scroll to first error field
         setTimeout(() => {
@@ -259,14 +257,8 @@ export default function ModernInventoryForm({
           }
         }, 100);
       } else {
-        // General error
-        const errorMessage = error.response?.data?.message || `Failed to ${item ? 'update' : 'create'} item`;
-        
-        toast({
-          title: "Error",
-          description: errorMessage,
-          variant: "destructive",
-        });
+        // Use smart error categorization
+        showSmartToast(error, `${item ? 'Update' : 'Create'} Item`);
       }
     } finally {
       setIsSubmitting(false);

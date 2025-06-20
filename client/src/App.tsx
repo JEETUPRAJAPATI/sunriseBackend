@@ -52,6 +52,9 @@ function Router() {
 }
 
 function App() {
+  // Monitor network status for smart notifications
+  useNetworkStatus();
+  
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
