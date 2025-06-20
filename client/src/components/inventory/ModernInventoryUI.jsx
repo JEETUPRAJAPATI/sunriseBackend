@@ -72,7 +72,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import InventoryFormTest from './InventoryFormTest';
+import ModernInventoryForm from './ModernInventoryForm';
 
 // Modern Stats Component
 function ModernStats({ stats, loading }) {
@@ -553,39 +553,55 @@ export default function ModernInventoryUI() {
   // Mutations
   const createItemMutation = useMutation({
     mutationFn: async (itemData) => {
+      console.log('Creating item with data:', itemData);
       const response = await api.createItem(itemData);
       return response;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Item created successfully:', data);
+      
+      // Force immediate cache invalidation and refetch
       queryClient.invalidateQueries({ queryKey: ['/api/items'] });
       queryClient.invalidateQueries({ queryKey: ['/api/inventory/stats'] });
+      
+      // Additional forced refetch with delay
+      setTimeout(() => {
+        queryClient.refetchQueries({ queryKey: ['/api/items'] });
+        queryClient.refetchQueries({ queryKey: ['/api/inventory/stats'] });
+      }, 100);
+      
       setIsAddModalOpen(false);
-      toast({
-        title: "Success",
-        description: "Item created successfully",
-      });
     },
     onError: (error) => {
+      console.error('Create item mutation error:', error);
       throw error;
     }
   });
 
   const updateItemMutation = useMutation({
     mutationFn: async ({ id, data }) => {
+      console.log('Updating item:', id, 'with data:', data);
       const response = await api.updateItem(id, data);
       return response;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Item updated successfully:', data);
+      
+      // Force immediate cache invalidation and refetch
       queryClient.invalidateQueries({ queryKey: ['/api/items'] });
       queryClient.invalidateQueries({ queryKey: ['/api/inventory/stats'] });
+      
+      // Additional forced refetch with delay
+      setTimeout(() => {
+        queryClient.refetchQueries({ queryKey: ['/api/items'] });
+        queryClient.refetchQueries({ queryKey: ['/api/inventory/stats'] });
+      }, 100);
+      
       setIsEditModalOpen(false);
       setSelectedItem(null);
-      toast({
-        title: "Success",
-        description: "Item updated successfully",
-      });
     },
     onError: (error) => {
+      console.error('Update item mutation error:', error);
       throw error;
     }
   });
@@ -719,7 +735,7 @@ export default function ModernInventoryUI() {
       />
 
       {/* Add Item Modal */}
-      <InventoryFormTest
+      <ModernInventoryForm
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         categories={categories}
@@ -729,7 +745,7 @@ export default function ModernInventoryUI() {
       />
 
       {/* Edit Item Modal */}
-      <InventoryFormTest
+      <ModernInventoryForm
         isOpen={isEditModalOpen}
         onClose={() => {
           setIsEditModalOpen(false);

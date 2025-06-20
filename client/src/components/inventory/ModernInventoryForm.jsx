@@ -12,7 +12,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -25,41 +24,55 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Package, DollarSign, BarChart3, FileText, Info } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { 
+  Loader2, 
+  Package, 
+  Tag, 
+  DollarSign, 
+  Warehouse,
+  AlertCircle,
+  CheckCircle2
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-// Enhanced validation schema
-const itemSchema = z.object({
-  name: z.string().min(2, 'Item name must be at least 2 characters').max(100, 'Name must be less than 100 characters'),
+// Comprehensive validation schema
+const inventorySchema = z.object({
+  name: z.string().min(2, 'Item name must be at least 2 characters').max(100, 'Name too long'),
+  code: z.string().optional(),
   description: z.string().optional(),
   category: z.string().min(1, 'Category is required'),
-  customerCategory: z.string().min(1, 'Customer Category is required'),
-  code: z.string().optional().refine((val) => !val || val.length >= 3, {
-    message: 'Item code must be at least 3 characters'
-  }),
-  qty: z.number().min(0, 'Quantity cannot be negative').default(0),
-  unit: z.string().min(1, 'Unit is required'),
-  stdCost: z.number().min(0, 'Cost cannot be negative').default(0),
-  salePrice: z.number().min(0, 'Sale price cannot be negative').default(0),
-  type: z.enum(['Product', 'Material', 'Spares', 'Assemblies']).default('Product'),
-  importance: z.enum(['Low', 'Normal', 'High', 'Critical']).default('Normal'),
   subCategory: z.string().optional(),
+  customerCategory: z.string().min(1, 'Customer Category is required'),
+  type: z.string().min(1, 'Item type is required'),
+  importance: z.string().min(1, 'Importance level is required'),
+  unit: z.string().min(1, 'Unit is required'),
+  qty: z.number().min(0, 'Quantity cannot be negative').default(0),
+  minStock: z.number().min(0, 'Minimum stock cannot be negative').default(0),
+  stdCost: z.number().min(0, 'Standard cost cannot be negative').default(0),
+  purchaseCost: z.number().min(0, 'Purchase cost cannot be negative').default(0),
+  salePrice: z.number().min(0, 'Sale price cannot be negative').default(0),
+  mrp: z.number().min(0, 'MRP cannot be negative').default(0),
+  gst: z.number().min(0, 'GST cannot be negative').max(100, 'GST cannot exceed 100%').default(0),
+  hsn: z.string().optional(),
   batch: z.string().optional(),
   store: z.string().optional(),
-  purchaseCost: z.number().min(0, 'Purchase cost cannot be negative').default(0),
-  hsn: z.string().optional(),
-  gst: z.number().min(0, 'GST cannot be negative').max(100, 'GST cannot exceed 100%').default(0),
-  mrp: z.number().min(0, 'MRP cannot be negative').default(0),
+  leadTime: z.number().min(0, 'Lead time cannot be negative').default(0),
   internalManufacturing: z.boolean().default(false),
   purchase: z.boolean().default(true),
   internalNotes: z.string().optional(),
-  minStock: z.number().min(0, 'Minimum stock cannot be negative').default(0),
-  leadTime: z.number().min(0, 'Lead time cannot be negative').default(0),
 });
 
 const ITEM_TYPES = ['Product', 'Material', 'Spares', 'Assemblies'];
@@ -76,159 +89,149 @@ export default function ModernInventoryForm({
   isLoading = false 
 }) {
   const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [availableSubCategories, setAvailableSubCategories] = useState([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [serverErrors, setServerErrors] = useState({});
 
   const form = useForm({
-    resolver: zodResolver(itemSchema),
+    resolver: zodResolver(inventorySchema),
     mode: 'onChange',
     defaultValues: {
       name: '',
+      code: '',
       description: '',
       category: '',
+      subCategory: '',
       customerCategory: '',
-      code: '',
-      qty: 0,
-      unit: 'pieces',
-      stdCost: 0,
-      salePrice: 0,
       type: 'Product',
       importance: 'Normal',
-      subCategory: '',
+      unit: 'pieces',
+      qty: 0,
+      minStock: 0,
+      stdCost: 0,
+      purchaseCost: 0,
+      salePrice: 0,
+      mrp: 0,
+      gst: 0,
+      hsn: '',
       batch: '',
       store: '',
-      purchaseCost: 0,
-      hsn: '',
-      gst: 0,
-      mrp: 0,
+      leadTime: 0,
       internalManufacturing: false,
       purchase: true,
       internalNotes: '',
-      minStock: 0,
-      leadTime: 0,
     }
   });
 
-  // Update form when item changes (for editing)
+  // Reset form when modal opens/closes or item changes
   useEffect(() => {
-    if (item) {
-      const formData = {
+    if (isOpen && item) {
+      // Editing mode
+      const itemData = {
         name: item.name || '',
+        code: item.code || '',
         description: item.description || '',
         category: item.category || '',
+        subCategory: item.subCategory || '',
         customerCategory: item.customerCategory || '',
-        code: item.code || '',
-        qty: Number(item.qty) || 0,
-        unit: item.unit || 'pieces',
-        stdCost: Number(item.stdCost) || 0,
-        salePrice: Number(item.salePrice) || 0,
         type: item.type || 'Product',
         importance: item.importance || 'Normal',
-        subCategory: item.subCategory || '',
+        unit: item.unit || 'pieces',
+        qty: Number(item.qty) || 0,
+        minStock: Number(item.minStock) || 0,
+        stdCost: Number(item.stdCost) || 0,
+        purchaseCost: Number(item.purchaseCost) || 0,
+        salePrice: Number(item.salePrice) || 0,
+        mrp: Number(item.mrp) || 0,
+        gst: Number(item.gst) || 0,
+        hsn: item.hsn || '',
         batch: item.batch || '',
         store: item.store || '',
-        purchaseCost: Number(item.purchaseCost) || 0,
-        hsn: item.hsn || '',
-        gst: Number(item.gst) || 0,
-        mrp: Number(item.mrp) || 0,
-        internalManufacturing: Boolean(item.internalManufacturing),
-        purchase: item.purchase !== false,
-        internalNotes: item.internalNotes || '',
-        minStock: Number(item.minStock) || 0,
         leadTime: Number(item.leadTime) || 0,
+        internalManufacturing: Boolean(item.internalManufacturing),
+        purchase: Boolean(item.purchase !== false),
+        internalNotes: item.internalNotes || '',
       };
       
-      form.reset(formData);
+      form.reset(itemData);
       setSelectedCategory(item.category || '');
-    } else {
-      const defaultValues = {
+      setServerErrors({});
+    } else if (isOpen && !item) {
+      // Adding mode
+      form.reset({
         name: '',
+        code: '',
         description: '',
         category: '',
+        subCategory: '',
         customerCategory: '',
-        code: '',
-        qty: 0,
-        unit: 'pieces',
-        stdCost: 0,
-        salePrice: 0,
         type: 'Product',
         importance: 'Normal',
-        subCategory: '',
+        unit: 'pieces',
+        qty: 0,
+        minStock: 0,
+        stdCost: 0,
+        purchaseCost: 0,
+        salePrice: 0,
+        mrp: 0,
+        gst: 0,
+        hsn: '',
         batch: '',
         store: '',
-        purchaseCost: 0,
-        hsn: '',
-        gst: 0,
-        mrp: 0,
+        leadTime: 0,
         internalManufacturing: false,
         purchase: true,
         internalNotes: '',
-        minStock: 0,
-        leadTime: 0,
-      };
-      
-      form.reset(defaultValues);
+      });
       setSelectedCategory('');
+      setServerErrors({});
     }
-  }, [item, form, isOpen]);
+  }, [isOpen, item, form]);
 
   // Update subcategories when category changes
   useEffect(() => {
-    const category = categories.find(cat => cat.name === selectedCategory);
-    setAvailableSubCategories(category?.subCategories || []);
-    if (category && !category.subCategories?.includes(form.getValues('subCategory'))) {
+    if (selectedCategory) {
+      const category = categories.find(cat => cat.name === selectedCategory);
+      if (category && category.subCategories) {
+        setAvailableSubCategories(category.subCategories);
+      } else {
+        setAvailableSubCategories([]);
+      }
       form.setValue('subCategory', '');
     }
   }, [selectedCategory, categories, form]);
 
   const handleSubmit = async (data) => {
     setIsSubmitting(true);
-    
-    // Log form data for debugging
-    console.log('Form data being submitted:', data);
+    setServerErrors({});
     
     try {
-      const result = await onSubmit(data);
+      console.log('Submitting form data:', data);
       
-      // Clear form and close modal on success
-      form.reset({
-        name: '',
-        description: '',
-        category: '',
-        customerCategory: '',
-        code: '',
-        qty: 0,
-        unit: 'pieces',
-        stdCost: 0,
-        salePrice: 0,
-        type: 'Product',
-        importance: 'Normal',
-        subCategory: '',
-        batch: '',
-        store: '',
-        purchaseCost: 0,
-        hsn: '',
-        gst: 0,
-        mrp: 0,
-        internalManufacturing: false,
-        purchase: true,
-        internalNotes: '',
-        minStock: 0,
-        leadTime: 0,
-      });
+      await onSubmit(data);
+      
+      // Success - close modal and reset form
+      form.reset();
       setSelectedCategory('');
+      setServerErrors({});
       onClose();
       
-      // Success toast is handled by the parent component
+      toast({
+        title: "Success",
+        description: `Item ${item ? 'updated' : 'created'} successfully`,
+        variant: "default",
+      });
+      
     } catch (error) {
       console.error('Form submission error:', error);
       
       // Handle validation errors from backend
       if (error.response?.data?.errors) {
         const errors = error.response.data.errors;
+        setServerErrors(errors);
         
-        // Set errors on form fields
+        // Set form errors for individual fields
         Object.keys(errors).forEach(field => {
           form.setError(field, {
             type: 'server',
@@ -236,19 +239,19 @@ export default function ModernInventoryForm({
           });
         });
         
-        // Show summary toast with field count
+        // Show summary toast
         const errorCount = Object.keys(errors).length;
-        const errorFields = Object.keys(errors).join(', ');
+        const fieldNames = Object.keys(errors).join(', ');
         
         toast({
           title: "Validation Failed",
-          description: `Please fix ${errorCount} error${errorCount > 1 ? 's' : ''}: ${errorFields}`,
+          description: `Please fix ${errorCount} error${errorCount > 1 ? 's' : ''} in: ${fieldNames}`,
           variant: "destructive",
         });
         
         // Scroll to first error field
-        const firstErrorField = Object.keys(errors)[0];
         setTimeout(() => {
+          const firstErrorField = Object.keys(errors)[0];
           const errorElement = document.querySelector(`[name="${firstErrorField}"]`);
           if (errorElement) {
             errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -257,9 +260,11 @@ export default function ModernInventoryForm({
         }, 100);
       } else {
         // General error
+        const errorMessage = error.response?.data?.message || `Failed to ${item ? 'update' : 'create'} item`;
+        
         toast({
           title: "Error",
-          description: error.response?.data?.message || `Failed to ${item ? 'update' : 'create'} item`,
+          description: errorMessage,
           variant: "destructive",
         });
       }
@@ -268,38 +273,31 @@ export default function ModernInventoryForm({
     }
   };
 
-  const getImportanceBadgeColor = (importance) => {
-    switch (importance) {
-      case 'Critical': return 'bg-red-500 hover:bg-red-600';
-      case 'High': return 'bg-orange-500 hover:bg-orange-600';
-      case 'Normal': return 'bg-blue-500 hover:bg-blue-600';
-      case 'Low': return 'bg-gray-500 hover:bg-gray-600';
-      default: return 'bg-blue-500 hover:bg-blue-600';
-    }
-  };
+  const hasErrors = Object.keys(form.formState.errors).length > 0 || Object.keys(serverErrors).length > 0;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            <Package className="h-6 w-6" />
+          <DialogTitle className="flex items-center gap-2">
+            <Package className="h-5 w-5" />
             {item ? 'Edit Item' : 'Add New Item'}
           </DialogTitle>
           <DialogDescription>
-            {item ? 'Update the item details below' : 'Fill in the details to add a new inventory item'}
+            {item ? 'Update item details and save changes' : 'Enter item information to add to inventory'}
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-            {/* Item Details Section */}
-            <Card className="border-blue-200">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-2 text-lg text-blue-700">
-                  <Info className="h-5 w-5" />
-                  Item Details
+            {/* Item Information Section */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Package className="h-4 w-4 text-blue-600" />
+                  Item Information
                 </CardTitle>
+                <CardDescription>Basic item details and identification</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -313,10 +311,10 @@ export default function ModernInventoryForm({
                           <Input 
                             placeholder="Enter item name" 
                             {...field}
-                            className={form.formState.errors.name ? 'border-red-500 focus:border-red-500' : ''}
+                            className={form.formState.errors.name || serverErrors.name ? 'border-red-500' : ''}
                           />
                         </FormControl>
-                        <FormMessage className="text-red-500 text-sm" />
+                        <FormMessage className="text-red-500" />
                       </FormItem>
                     )}
                   />
@@ -328,12 +326,13 @@ export default function ModernInventoryForm({
                       <FormItem>
                         <FormLabel>Item Code</FormLabel>
                         <FormControl>
-                          <Input placeholder="Auto-generated if empty" {...field} />
+                          <Input 
+                            placeholder="Auto-generated if empty" 
+                            {...field}
+                            className={form.formState.errors.code || serverErrors.code ? 'border-red-500' : ''}
+                          />
                         </FormControl>
-                        <FormDescription>
-                          Leave empty to auto-generate based on type
-                        </FormDescription>
-                        <FormMessage />
+                        <FormMessage className="text-red-500" />
                       </FormItem>
                     )}
                   />
@@ -348,7 +347,7 @@ export default function ModernInventoryForm({
                       <FormControl>
                         <Textarea 
                           placeholder="Enter item description"
-                          className="min-h-[80px]"
+                          rows={3}
                           {...field} 
                         />
                       </FormControl>
@@ -363,10 +362,10 @@ export default function ModernInventoryForm({
                     name="type"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Type</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormLabel className="text-red-500">Item Type *</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
-                            <SelectTrigger>
+                            <SelectTrigger className={form.formState.errors.type || serverErrors.type ? 'border-red-500' : ''}>
                               <SelectValue placeholder="Select type" />
                             </SelectTrigger>
                           </FormControl>
@@ -378,7 +377,7 @@ export default function ModernInventoryForm({
                             ))}
                           </SelectContent>
                         </Select>
-                        <FormMessage />
+                        <FormMessage className="text-red-500" />
                       </FormItem>
                     )}
                   />
@@ -388,26 +387,24 @@ export default function ModernInventoryForm({
                     name="importance"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Importance Level</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormLabel className="text-red-500">Importance *</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
-                            <SelectTrigger>
+                            <SelectTrigger className={form.formState.errors.importance || serverErrors.importance ? 'border-red-500' : ''}>
                               <SelectValue placeholder="Select importance" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
                             {IMPORTANCE_LEVELS.map((level) => (
                               <SelectItem key={level} value={level}>
-                                <div className="flex items-center gap-2">
-                                  <Badge className={`${getImportanceBadgeColor(level)} text-white text-xs`}>
-                                    {level}
-                                  </Badge>
-                                </div>
+                                <Badge variant={level === 'Critical' ? 'destructive' : level === 'High' ? 'secondary' : 'outline'}>
+                                  {level}
+                                </Badge>
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
-                        <FormMessage />
+                        <FormMessage className="text-red-500" />
                       </FormItem>
                     )}
                   />
@@ -415,13 +412,14 @@ export default function ModernInventoryForm({
               </CardContent>
             </Card>
 
-            {/* Category Info Section */}
-            <Card className="border-green-200">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-2 text-lg text-green-700">
-                  <BarChart3 className="h-5 w-5" />
-                  Category Info
+            {/* Category Information Section */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Tag className="h-4 w-4 text-green-600" />
+                  Category Information
                 </CardTitle>
+                <CardDescription>Categorize and classify your item</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -430,16 +428,13 @@ export default function ModernInventoryForm({
                     name="category"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-red-500">Category *</FormLabel>
-                        <Select 
-                          onValueChange={(value) => {
-                            field.onChange(value);
-                            setSelectedCategory(value);
-                          }} 
-                          value={field.value}
-                        >
+                        <FormLabel className="text-red-500">Product Category *</FormLabel>
+                        <Select onValueChange={(value) => {
+                          field.onChange(value);
+                          setSelectedCategory(value);
+                        }} value={field.value}>
                           <FormControl>
-                            <SelectTrigger className={form.formState.errors.category ? 'border-red-500' : ''}>
+                            <SelectTrigger className={form.formState.errors.category || serverErrors.category ? 'border-red-500' : ''}>
                               <SelectValue placeholder="Select category" />
                             </SelectTrigger>
                           </FormControl>
@@ -451,53 +446,26 @@ export default function ModernInventoryForm({
                             ))}
                           </SelectContent>
                         </Select>
-                        <FormMessage className="text-red-500 text-sm" />
+                        <FormMessage className="text-red-500" />
                       </FormItem>
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="customerCategory"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-red-500">Customer Category *</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger className={form.formState.errors.customerCategory ? 'border-red-500' : ''}>
-                              <SelectValue placeholder="Select customer category" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {customerCategories.map((category) => (
-                              <SelectItem key={category._id} value={category.name}>
-                                {category.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage className="text-red-500 text-sm" />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="subCategory"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Sub Category</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormLabel>Sub-Category</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={!selectedCategory}>
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select sub category" />
+                              <SelectValue placeholder="Select sub-category" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {availableSubCategories.map((subCat, index) => (
-                              <SelectItem key={index} value={subCat}>
+                            {availableSubCategories.map((subCat) => (
+                              <SelectItem key={subCat} value={subCat}>
                                 {subCat}
                               </SelectItem>
                             ))}
@@ -507,40 +475,72 @@ export default function ModernInventoryForm({
                       </FormItem>
                     )}
                   />
-
-                  <FormField
-                    control={form.control}
-                    name="batch"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Batch/Lot Number</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter batch number" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
                 </div>
+
+                <FormField
+                  control={form.control}
+                  name="customerCategory"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-red-500">Customer Category *</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger className={form.formState.errors.customerCategory || serverErrors.customerCategory ? 'border-red-500' : ''}>
+                            <SelectValue placeholder="Select customer category" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {customerCategories.map((category) => (
+                            <SelectItem key={category._id} value={category.name}>
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage className="text-red-500" />
+                    </FormItem>
+                  )}
+                />
               </CardContent>
             </Card>
 
-            {/* Pricing Section */}
-            <Card className="border-yellow-200">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-2 text-lg text-yellow-700">
-                  <DollarSign className="h-5 w-5" />
-                  Pricing
+            {/* Pricing Information Section */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <DollarSign className="h-4 w-4 text-green-600" />
+                  Pricing Information
                 </CardTitle>
+                <CardDescription>Set costs and pricing details</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <FormField
                     control={form.control}
                     name="stdCost"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Cost</FormLabel>
+                        <FormLabel>Standard Cost</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            step="0.01"
+                            placeholder="0.00" 
+                            {...field}
+                            onChange={(e) => field.onChange(Number(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="purchaseCost"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Purchase Cost</FormLabel>
                         <FormControl>
                           <Input 
                             type="number" 
@@ -561,28 +561,6 @@ export default function ModernInventoryForm({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Sale Price</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            step="0.01"
-                            placeholder="0.00" 
-                            {...field}
-                            onChange={(e) => field.onChange(Number(e.target.value))}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="purchaseCost"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Purchase Cost</FormLabel>
                         <FormControl>
                           <Input 
                             type="number" 
@@ -622,14 +600,32 @@ export default function ModernInventoryForm({
                     name="gst"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>GST Rate (%)</FormLabel>
+                        <FormLabel>GST (%)</FormLabel>
                         <FormControl>
                           <Input 
                             type="number" 
                             step="0.01"
                             placeholder="0" 
+                            max="100"
                             {...field}
                             onChange={(e) => field.onChange(Number(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="hsn"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>HSN Code</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="HSN code" 
+                            {...field}
                           />
                         </FormControl>
                         <FormMessage />
@@ -640,16 +636,17 @@ export default function ModernInventoryForm({
               </CardContent>
             </Card>
 
-            {/* Stock Info Section */}
-            <Card className="border-purple-200">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-2 text-lg text-purple-700">
-                  <Package className="h-5 w-5" />
-                  Stock Info
+            {/* Stock Information Section */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Warehouse className="h-4 w-4 text-purple-600" />
+                  Stock Information
                 </CardTitle>
+                <CardDescription>Manage inventory levels and storage</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <FormField
                     control={form.control}
                     name="qty"
@@ -677,7 +674,7 @@ export default function ModernInventoryForm({
                         <FormLabel className="text-red-500">Unit *</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
-                            <SelectTrigger className={form.formState.errors.unit ? 'border-red-500' : ''}>
+                            <SelectTrigger className={form.formState.errors.unit || serverErrors.unit ? 'border-red-500' : ''}>
                               <SelectValue placeholder="Select unit" />
                             </SelectTrigger>
                           </FormControl>
@@ -689,19 +686,17 @@ export default function ModernInventoryForm({
                             ))}
                           </SelectContent>
                         </Select>
-                        <FormMessage className="text-red-500 text-sm" />
+                        <FormMessage className="text-red-500" />
                       </FormItem>
                     )}
                   />
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <FormField
                     control={form.control}
                     name="minStock"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Minimum Stock Level</FormLabel>
+                        <FormLabel>Minimum Stock</FormLabel>
                         <FormControl>
                           <Input 
                             type="number" 
@@ -710,9 +705,6 @@ export default function ModernInventoryForm({
                             onChange={(e) => field.onChange(Number(e.target.value))}
                           />
                         </FormControl>
-                        <FormDescription>
-                          Alert when stock falls below this level
-                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -736,15 +728,95 @@ export default function ModernInventoryForm({
                       </FormItem>
                     )}
                   />
+                </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="store"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Store Location</FormLabel>
+                        <FormLabel>Storage Location</FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter store location" {...field} />
+                          <Input 
+                            placeholder="Storage location" 
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="batch"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Batch Number</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="Batch number" 
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-6">
+                    <FormField
+                      control={form.control}
+                      name="internalManufacturing"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>Internal Manufacturing</FormLabel>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="purchase"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>Allow Purchase</FormLabel>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="internalNotes"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Internal Notes</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Internal notes and comments"
+                            rows={2}
+                            {...field} 
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -754,19 +826,36 @@ export default function ModernInventoryForm({
               </CardContent>
             </Card>
 
-            {/* Action Buttons */}
-            <div className="flex justify-end gap-4 pt-6 border-t">
-              <Button type="button" variant="outline" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={isLoading || isSubmitting || Object.keys(form.formState.errors).length > 0}
-                className={Object.keys(form.formState.errors).length > 0 ? 'opacity-50 cursor-not-allowed' : ''}
-              >
-                {(isLoading || isSubmitting) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {item ? 'Update Item' : 'Create Item'}
-              </Button>
+            {/* Form Actions */}
+            <div className="flex justify-between items-center pt-4">
+              <div className="flex items-center gap-2">
+                {hasErrors && (
+                  <div className="flex items-center gap-2 text-red-600">
+                    <AlertCircle className="h-4 w-4" />
+                    <span className="text-sm">Please fix the highlighted errors</span>
+                  </div>
+                )}
+                {!hasErrors && form.formState.isValid && (
+                  <div className="flex items-center gap-2 text-green-600">
+                    <CheckCircle2 className="h-4 w-4" />
+                    <span className="text-sm">Form is ready to submit</span>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex gap-4">
+                <Button type="button" variant="outline" onClick={onClose}>
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={isLoading || isSubmitting || hasErrors}
+                  className="min-w-[120px]"
+                >
+                  {(isLoading || isSubmitting) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {item ? 'Update Item' : 'Create Item'}
+                </Button>
+              </div>
             </div>
           </form>
         </Form>
