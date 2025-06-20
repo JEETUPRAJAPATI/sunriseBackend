@@ -81,6 +81,14 @@ export const getItems = async (req, res) => {
     const sortOptions = {};
     sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
 
+    // Default to createdAt descending for latest records first
+    if (!sortBy || sortBy === 'name') {
+      sortOptions.createdAt = -1;
+      if (sortBy === 'name') {
+        sortOptions.name = sortOrder === 'desc' ? -1 : 1;
+      }
+    }
+
     const items = await Item.find(query)
       .sort(sortOptions)
       .skip(skip)
@@ -488,7 +496,7 @@ export const getCategories = async (req, res) => {
       return res.status(403).json({ message: 'Access denied. Insufficient permissions.' });
     }
 
-    const categories = await Category.find().sort({ name: 1 });
+    const categories = await Category.find().sort({ createdAt: -1, name: 1 });
     res.json({ categories });
   } catch (error) {
     console.error('Get categories error:', error);
@@ -649,7 +657,7 @@ export const getCustomerCategories = async (req, res) => {
       return res.status(403).json({ message: 'Access denied. Insufficient permissions.' });
     }
 
-    const customerCategories = await CustomerCategory.find().sort({ name: 1 });
+    const customerCategories = await CustomerCategory.find().sort({ createdAt: -1, name: 1 });
     res.json({ customerCategories });
   } catch (error) {
     console.error('Get customer categories error:', error);
