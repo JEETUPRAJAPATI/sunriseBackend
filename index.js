@@ -18,7 +18,7 @@ const allowedOrigins = [
   "http://localhost:5000",
   "http://localhost:5173",
   "https://sunrisebackend-xfci.onrender.com",
-  "sunrize.techizebuilder.com"
+  "https://sunrize.techizebuilder.com/"
 ];
 
 app.use((req, res, next) => {
@@ -68,7 +68,11 @@ app.use((req, res, next) => {
   try {
     // Connect DB and seed
     await connectDB();
+    // Create seed users after database connection
+    await createSeedUsers();
 
+    // Seed inventory data
+    await seedInventoryData();
     // Register routes
     const authRoutes = (await import("./auth-routes.js")).default;
     const profileRoutes = (await import("./routes/profileRoutes.js")).default;
