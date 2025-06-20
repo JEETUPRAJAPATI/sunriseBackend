@@ -110,37 +110,63 @@ export default function ModernInventoryForm({
   // Update form when item changes (for editing)
   useEffect(() => {
     if (item) {
-      form.reset({
+      const formData = {
         name: item.name || '',
         description: item.description || '',
         category: item.category || '',
         customerCategory: item.customerCategory || '',
         code: item.code || '',
-        qty: item.qty || 0,
+        qty: Number(item.qty) || 0,
         unit: item.unit || 'pieces',
-        stdCost: item.stdCost || 0,
-        salePrice: item.salePrice || 0,
+        stdCost: Number(item.stdCost) || 0,
+        salePrice: Number(item.salePrice) || 0,
         type: item.type || 'Product',
         importance: item.importance || 'Normal',
         subCategory: item.subCategory || '',
         batch: item.batch || '',
         store: item.store || '',
-        purchaseCost: item.purchaseCost || 0,
+        purchaseCost: Number(item.purchaseCost) || 0,
         hsn: item.hsn || '',
-        gst: item.gst || 0,
-        mrp: item.mrp || 0,
-        internalManufacturing: item.internalManufacturing || false,
+        gst: Number(item.gst) || 0,
+        mrp: Number(item.mrp) || 0,
+        internalManufacturing: Boolean(item.internalManufacturing),
         purchase: item.purchase !== false,
         internalNotes: item.internalNotes || '',
-        minStock: item.minStock || 0,
-        leadTime: item.leadTime || 0,
-      });
+        minStock: Number(item.minStock) || 0,
+        leadTime: Number(item.leadTime) || 0,
+      };
+      
+      form.reset(formData);
       setSelectedCategory(item.category || '');
     } else {
-      form.reset();
+      form.reset({
+        name: '',
+        description: '',
+        category: '',
+        customerCategory: '',
+        code: '',
+        qty: 0,
+        unit: 'pieces',
+        stdCost: 0,
+        salePrice: 0,
+        type: 'Product',
+        importance: 'Normal',
+        subCategory: '',
+        batch: '',
+        store: '',
+        purchaseCost: 0,
+        hsn: '',
+        gst: 0,
+        mrp: 0,
+        internalManufacturing: false,
+        purchase: true,
+        internalNotes: '',
+        minStock: 0,
+        leadTime: 0,
+      });
       setSelectedCategory('');
     }
-  }, [item, form]);
+  }, [item, form, isOpen]);
 
   // Update subcategories when category changes
   useEffect(() => {
@@ -154,14 +180,14 @@ export default function ModernInventoryForm({
   const handleSubmit = async (data) => {
     setIsSubmitting(true);
     try {
-      await onSubmit(data);
+      const result = await onSubmit(data);
+      
+      // Clear form and close modal on success
       form.reset();
       setSelectedCategory('');
       onClose();
-      toast({
-        title: "Success",
-        description: `Item ${item ? 'updated' : 'created'} successfully`,
-      });
+      
+      // Success toast is handled by the parent component
     } catch (error) {
       // Handle validation errors
       if (error.response?.data?.errors) {
@@ -173,13 +199,11 @@ export default function ModernInventoryForm({
           });
         });
         
-        // Show field-specific error toasts
-        Object.keys(errors).forEach(field => {
-          toast({
-            title: `${field.charAt(0).toUpperCase() + field.slice(1)} Error`,
-            description: errors[field],
-            variant: "destructive",
-          });
+        // Show general validation error toast
+        toast({
+          title: "Validation Failed",
+          description: "Please check the form for errors and try again.",
+          variant: "destructive",
         });
         
         // Scroll to first error

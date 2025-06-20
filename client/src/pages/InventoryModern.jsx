@@ -87,21 +87,25 @@ export default function InventoryModern() {
     queryKey: ['/api/categories'],
     enabled: canView,
     retry: false,
-    staleTime: 300000, // 5 minutes
+    staleTime: 300000, // 5 minutes (categories don't change often)
+    refetchOnMount: false, // Categories are more static
   });
 
   const { data: customerCategoriesData, isLoading: customerCategoriesLoading } = useQuery({
     queryKey: ['/api/customer-categories'],
     enabled: canView,
     retry: false,
-    staleTime: 300000, // 5 minutes
+    staleTime: 300000, // 5 minutes (customer categories don't change often)
+    refetchOnMount: false, // Customer categories are more static
   });
 
-  const { data: statsData, isLoading: statsLoading } = useQuery({
+  const { data: statsData, isLoading: statsLoading, refetch: refetchStats } = useQuery({
     queryKey: ['/api/inventory/stats'],
     enabled: canView,
     retry: false,
-    staleTime: 60000, // 1 minute
+    staleTime: 10000, // 10 seconds for more frequent updates
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
   });
 
   // Extract data
