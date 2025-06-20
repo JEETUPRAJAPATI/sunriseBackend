@@ -227,11 +227,13 @@ class ApiService {
   }
 
   async createItem(itemData) {
-    return this.post("/items", itemData);
+    console.log('API createItem called with:', itemData);
+    return this.post("/api/items", itemData);
   }
 
   async updateItem(id, itemData) {
-    return this.put(`/items/${id}`, itemData);
+    console.log('API updateItem called with ID:', id, 'Data:', itemData);
+    return this.put(`/api/items/${id}`, itemData);
   }
 
   async deleteItem(id) {
@@ -243,7 +245,7 @@ class ApiService {
   }
 
   async getCategories() {
-    return this.get("/categories");
+    return this.get("/api/categories");
   }
 
   async createCategory(categoryData) {
@@ -259,7 +261,7 @@ class ApiService {
   }
 
   async getCustomerCategories() {
-    return this.get("/customer-categories");
+    return this.get("/api/customer-categories");
   }
 
   async createCustomerCategory(categoryData) {
@@ -279,7 +281,7 @@ class ApiService {
   }
 
   async getInventoryStats() {
-    return this.get("/inventory/stats");
+    return this.get("/api/inventory/stats");
   }
 
   // Profile Management
