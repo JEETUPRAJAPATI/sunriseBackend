@@ -155,10 +155,14 @@ export const getItemById = async (req, res) => {
 export const createItem = async (req, res) => {
   try {
     if (!checkInventoryPermission(req.user, 'add')) {
-      return res.status(403).json({ message: 'Access denied. Insufficient permissions.' });
+      return res.status(403).json({ 
+        success: false,
+        message: 'Access denied. Insufficient permissions.' 
+      });
     }
 
     const itemData = req.body;
+    console.log('Received item data:', itemData);
 
     // Enhanced validation
     const validation = validateItemData(itemData);
