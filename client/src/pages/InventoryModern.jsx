@@ -36,7 +36,7 @@ import {
 } from 'lucide-react';
 
 // Import our new components
-import InventoryItemForm from '@/components/inventory/InventoryItemForm';
+import ModernInventoryForm from '@/components/inventory/ModernInventoryForm';
 import InventoryTable from '@/components/inventory/InventoryTable';
 import InventoryFilters from '@/components/inventory/InventoryFilters';
 import InventoryStats, { InventoryTypeBreakdown } from '@/components/inventory/InventoryStats';
@@ -90,6 +90,13 @@ export default function InventoryModern() {
     staleTime: 300000, // 5 minutes
   });
 
+  const { data: customerCategoriesData, isLoading: customerCategoriesLoading } = useQuery({
+    queryKey: ['/api/customer-categories'],
+    enabled: canView,
+    retry: false,
+    staleTime: 300000, // 5 minutes
+  });
+
   const { data: statsData, isLoading: statsLoading } = useQuery({
     queryKey: ['/api/inventory/stats'],
     enabled: canView,
@@ -101,6 +108,7 @@ export default function InventoryModern() {
   const items = itemsData?.items || [];
   const pagination = itemsData?.pagination || {};
   const categories = categoriesData?.categories || [];
+  const customerCategories = customerCategoriesData?.customerCategories || [];
   const stats = statsData?.overview || {};
   const typeStats = statsData?.typeStats || [];
 
@@ -120,25 +128,8 @@ export default function InventoryModern() {
       });
     },
     onError: (error) => {
-      const errorMessage = error.response?.data?.message || 'Failed to create item';
-      const errors = error.response?.data?.errors;
-      
-      if (errors) {
-        // Show field-specific errors
-        Object.keys(errors).forEach(field => {
-          toast({
-            title: "Validation Error",
-            description: `${field}: ${errors[field]}`,
-            variant: "destructive",
-          });
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: errorMessage,
-          variant: "destructive",
-        });
-      }
+      // Error handling is now done in the form component
+      throw error;
     }
   });
 
@@ -158,24 +149,8 @@ export default function InventoryModern() {
       });
     },
     onError: (error) => {
-      const errorMessage = error.response?.data?.message || 'Failed to update item';
-      const errors = error.response?.data?.errors;
-      
-      if (errors) {
-        Object.keys(errors).forEach(field => {
-          toast({
-            title: "Validation Error",
-            description: `${field}: ${errors[field]}`,
-            variant: "destructive",
-          });
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: errorMessage,
-          variant: "destructive",
-        });
-      }
+      // Error handling is now done in the form component
+      throw error;
     }
   });
 
@@ -451,16 +426,17 @@ export default function InventoryModern() {
       </Tabs>
 
       {/* Add Item Modal */}
-      <InventoryItemForm
+      <ModernInventoryForm
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         categories={categories}
+        customerCategories={customerCategories}
         onSubmit={handleCreateItem}
         isLoading={createItemMutation.isPending}
       />
 
       {/* Edit Item Modal */}
-      <InventoryItemForm
+      <ModernInventoryForm
         isOpen={isEditModalOpen}
         onClose={() => {
           setIsEditModalOpen(false);
@@ -468,6 +444,7 @@ export default function InventoryModern() {
         }}
         item={selectedItem}
         categories={categories}
+        customerCategories={customerCategories}
         onSubmit={handleUpdateItem}
         isLoading={updateItemMutation.isPending}
       />

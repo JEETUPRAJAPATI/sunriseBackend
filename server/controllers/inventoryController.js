@@ -290,6 +290,7 @@ const sanitizeItemData = (data) => {
   if (sanitized.hsn) sanitized.hsn = sanitized.hsn.trim();
   if (sanitized.description) sanitized.description = sanitized.description.trim();
   if (sanitized.internalNotes) sanitized.internalNotes = sanitized.internalNotes.trim();
+  if (sanitized.customerCategory) sanitized.customerCategory = sanitized.customerCategory.trim();
 
   // Convert numeric fields
   if (sanitized.qty !== undefined) sanitized.qty = Number(sanitized.qty);

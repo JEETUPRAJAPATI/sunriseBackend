@@ -40,6 +40,7 @@ const itemSchema = z.object({
   code: z.string().min(3, 'Code must be at least 3 characters').max(20, 'Code must be less than 20 characters').optional(),
   category: z.string().min(1, 'Category is required'),
   subCategory: z.string().optional(),
+  customerCategory: z.string().optional(),
   batch: z.string().optional(),
   qty: z.number().min(0, 'Quantity cannot be negative').default(0),
   unit: z.string().min(1, 'Unit is required'),
@@ -58,6 +59,11 @@ const itemSchema = z.object({
   internalNotes: z.string().optional(),
   minStock: z.number().min(0, 'Minimum stock cannot be negative').default(0),
   leadTime: z.number().min(0, 'Lead time cannot be negative').default(0),
+  tags: z.array(z.string()).default([]),
+  customerPrices: z.array(z.object({
+    category: z.string(),
+    price: z.number().min(0)
+  })).default([])
 });
 
 const ITEM_TYPES = ['Product', 'Material', 'Spares', 'Assemblies'];
@@ -69,12 +75,14 @@ export default function InventoryItemForm({
   onClose, 
   item = null, 
   categories = [], 
+  customerCategories = [],
   onSubmit, 
   isLoading = false 
 }) {
   const { toast } = useToast();
   const [selectedCategory, setSelectedCategory] = useState('');
   const [availableSubCategories, setAvailableSubCategories] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm({
     resolver: zodResolver(itemSchema),
@@ -83,6 +91,7 @@ export default function InventoryItemForm({
       code: '',
       category: '',
       subCategory: '',
+      customerCategory: '',
       batch: '',
       qty: 0,
       unit: 'pieces',
@@ -101,6 +110,8 @@ export default function InventoryItemForm({
       internalNotes: '',
       minStock: 0,
       leadTime: 0,
+      tags: [],
+      customerPrices: []
     }
   });
 
@@ -112,6 +123,7 @@ export default function InventoryItemForm({
         code: item.code || '',
         category: item.category || '',
         subCategory: item.subCategory || '',
+        customerCategory: item.customerCategory || '',
         batch: item.batch || '',
         qty: item.qty || 0,
         unit: item.unit || 'pieces',
@@ -130,6 +142,8 @@ export default function InventoryItemForm({
         internalNotes: item.internalNotes || '',
         minStock: item.minStock || 0,
         leadTime: item.leadTime || 0,
+        tags: item.tags || [],
+        customerPrices: item.customerPrices || []
       });
       setSelectedCategory(item.category || '');
     } else {
@@ -148,6 +162,7 @@ export default function InventoryItemForm({
   }, [selectedCategory, categories, form]);
 
   const handleSubmit = async (data) => {
+    setIsSubmitting(true);
     try {
       await onSubmit(data);
       form.reset();
@@ -158,11 +173,39 @@ export default function InventoryItemForm({
         description: `Item ${item ? 'updated' : 'created'} successfully`,
       });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: error.message || `Failed to ${item ? 'update' : 'create'} item`,
-        variant: "destructive",
-      });
+      // Handle validation errors
+      if (error.response?.data?.errors) {
+        const errors = error.response.data.errors;
+        Object.keys(errors).forEach(field => {
+          form.setError(field, {
+            type: 'server',
+            message: errors[field]
+          });
+        });
+        
+        // Show general error toast
+        toast({
+          title: "Validation Failed",
+          description: "Please check the form for errors and try again.",
+          variant: "destructive",
+        });
+        
+        // Scroll to first error
+        const firstErrorField = Object.keys(errors)[0];
+        const errorElement = document.querySelector(`[name="${firstErrorField}"]`);
+        if (errorElement) {
+          errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          errorElement.focus();
+        }
+      } else {
+        toast({
+          title: "Error",
+          description: error.response?.data?.message || `Failed to ${item ? 'update' : 'create'} item`,
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -343,6 +386,31 @@ export default function InventoryItemForm({
                           {availableSubCategories.map((subCat, index) => (
                             <SelectItem key={index} value={subCat}>
                               {subCat}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="customerCategory"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Customer Category</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select customer category" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {customerCategories.map((category) => (
+                            <SelectItem key={category._id} value={category.name}>
+                              {category.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -699,8 +767,8 @@ export default function InventoryItemForm({
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button type="submit" disabled={isLoading || isSubmitting}>
+                {(isLoading || isSubmitting) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {item ? 'Update Item' : 'Create Item'}
               </Button>
             </div>
