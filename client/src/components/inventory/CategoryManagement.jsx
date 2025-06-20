@@ -213,13 +213,18 @@ export default function CategoryManagement({
   const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, item: null, type: null });
   const queryClient = useQueryClient();
 
-  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
+  // Data fetching with proper extraction
+  const { data: categoriesData, isLoading: categoriesLoading } = useQuery({
     queryKey: ['/api/categories'],
   });
 
-  const { data: customerCategories = [], isLoading: customerCategoriesLoading } = useQuery({
+  const { data: customerCategoriesData, isLoading: customerCategoriesLoading } = useQuery({
     queryKey: ['/api/customer-categories'],
   });
+
+  // Extract arrays from API response
+  const categories = Array.isArray(categoriesData?.categories) ? categoriesData.categories : [];
+  const customerCategories = Array.isArray(customerCategoriesData?.customerCategories) ? customerCategoriesData.customerCategories : [];
 
   const deleteMutation = useMutation({
     mutationFn: ({ id, type }) => {
@@ -272,12 +277,18 @@ export default function CategoryManagement({
   return (
     <div className="space-y-6">
       <Tabs defaultValue="categories" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="categories" className="flex items-center gap-2">
+        <TabsList className="grid w-full grid-cols-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+          <TabsTrigger 
+            value="categories" 
+            className="flex items-center gap-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+          >
             <Tag className="h-4 w-4" />
             Product Categories
           </TabsTrigger>
-          <TabsTrigger value="customer-categories" className="flex items-center gap-2">
+          <TabsTrigger 
+            value="customer-categories" 
+            className="flex items-center gap-2 data-[state=active]:bg-green-600 data-[state=active]:text-white"
+          >
             <Users className="h-4 w-4" />
             Customer Categories
           </TabsTrigger>
