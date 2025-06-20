@@ -200,7 +200,12 @@ function CategoryForm({ isOpen, onClose, category = null, type = 'category' }) {
 }
 
 // Main Category Management Component
-export default function CategoryManagement() {
+export default function CategoryManagement({ 
+  showCategoryForm, 
+  setShowCategoryForm, 
+  showCustomerCategoryForm, 
+  setShowCustomerCategoryForm 
+}) {
   const [categoryFormOpen, setCategoryFormOpen] = useState(false);
   const [customerCategoryFormOpen, setCustomerCategoryFormOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);

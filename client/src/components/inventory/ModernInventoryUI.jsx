@@ -115,15 +115,15 @@ function ModernStats({ stats, isLoading }) {
                 <stat.icon className={`h-6 w-6 ${stat.color}`} />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
-                <p className="text-2xl font-bold">
+                <div className="text-sm font-medium text-muted-foreground">{stat.title}</div>
+                <div className="text-2xl font-bold">
                   {isLoading ? (
                     <div className="h-6 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
                   ) : (
                     stat.value
                   )}
-                </p>
-                <p className="text-xs text-green-600 font-medium">{stat.change}</p>
+                </div>
+                <div className="text-xs text-green-600 font-medium">{stat.change}</div>
               </div>
             </div>
           </CardContent>
