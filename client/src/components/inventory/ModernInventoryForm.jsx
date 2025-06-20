@@ -96,7 +96,16 @@ export default function ModernInventoryForm({
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [availableSubCategories, setAvailableSubCategories] = useState([]);
+  // Get available subcategories based on selected category
+  const availableSubCategories = React.useMemo(() => {
+    if (!selectedCategory) return [];
+    
+    const selectedCat = categories.find(cat => cat.name === selectedCategory);
+    console.log('Selected category:', selectedCat);
+    console.log('Available subcategories:', selectedCat?.subcategories);
+    
+    return selectedCat?.subcategories || [];
+  }, [selectedCategory, categories]);
   const [serverErrors, setServerErrors] = useState({});
 
   const form = useForm({
@@ -194,18 +203,7 @@ export default function ModernInventoryForm({
     }
   }, [isOpen, item, form]);
 
-  // Update subcategories when category changes
-  useEffect(() => {
-    if (selectedCategory) {
-      const category = categories.find(cat => cat.name === selectedCategory);
-      if (category && category.subCategories) {
-        setAvailableSubCategories(category.subCategories);
-      } else {
-        setAvailableSubCategories([]);
-      }
-      form.setValue('subCategory', '');
-    }
-  }, [selectedCategory, categories, form]);
+
 
   const handleSubmit = async (data) => {
     setIsSubmitting(true);
@@ -456,6 +454,8 @@ export default function ModernInventoryForm({
                         <Select onValueChange={(value) => {
                           field.onChange(value);
                           setSelectedCategory(value);
+                          // Clear subcategory when category changes
+                          form.setValue('subCategory', '');
                         }} value={field.value}>
                           <FormControl>
                             <SelectTrigger className={form.formState.errors.category || serverErrors.category ? 'border-red-500' : ''}>
@@ -481,18 +481,28 @@ export default function ModernInventoryForm({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Sub-Category</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value} disabled={!selectedCategory}>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={!selectedCategory || availableSubCategories.length === 0}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select sub-category" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {availableSubCategories.map((subCat) => (
-                              <SelectItem key={subCat} value={subCat}>
-                                {subCat}
+                            {availableSubCategories.length > 0 ? (
+                              availableSubCategories.map((subCat, index) => (
+                                <SelectItem key={`${subCat}-${index}`} value={subCat}>
+                                  {subCat}
+                                </SelectItem>
+                              ))
+                            ) : selectedCategory ? (
+                              <SelectItem value="no-subcategories" disabled>
+                                No subcategories available for {selectedCategory}
                               </SelectItem>
-                            ))}
+                            ) : (
+                              <SelectItem value="no-category" disabled>
+                                Select a category first
+                              </SelectItem>
+                            )}
                           </SelectContent>
                         </Select>
                         <FormMessage />
