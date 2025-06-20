@@ -84,12 +84,7 @@ app.use((req, res, next) => {
       res.sendFile(path.join(__dirname, "test-profile.html"));
     });
 
-    // Serve Vite frontend or static files
-    if (process.env.NODE_ENV === "production") {
-      serveStatic(app);
-    } else {
-      await setupVite(app, server);
-    }
+
 
     // Catch-all for unknown API routes
     app.use("/api/*", (req, res) => {
