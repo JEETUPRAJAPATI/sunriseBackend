@@ -6,7 +6,6 @@ import { createServer } from "http";
 import path from "path";
 import { fileURLToPath } from "url";
 
-import { setupVite, serveStatic, log } from "./vite.js";
 import connectDB from "./config/database.js";
 import createSeedUsers from "./seed/seedUsers.js";
 import { seedInventoryData } from "./seed/seedInventory.js";
