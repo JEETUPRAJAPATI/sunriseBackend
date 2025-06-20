@@ -214,22 +214,33 @@ export const createItem = async (req, res) => {
   }
 };
 
-// Validation helper function
-const validateItemData = (data) => {
+// Enhanced validation helper function
+const validateItemData = (data, isUpdate = false) => {
   const errors = {};
   
-  // Required fields
-  if (!data.name || data.name.trim().length < 2) {
+  // Required fields validation
+  if (!data.name || typeof data.name !== 'string' || data.name.trim().length < 2) {
     errors.name = 'Item name must be at least 2 characters';
   }
-  if (!data.category || data.category.trim().length === 0) {
+  
+  if (!data.category || typeof data.category !== 'string' || data.category.trim().length === 0) {
     errors.category = 'Category is required';
   }
-  if (!data.customerCategory || data.customerCategory.trim().length === 0) {
+  
+  if (!data.customerCategory || typeof data.customerCategory !== 'string' || data.customerCategory.trim().length === 0) {
     errors.customerCategory = 'Customer Category is required';
   }
-  if (!data.unit || data.unit.trim().length === 0) {
+  
+  if (!data.unit || typeof data.unit !== 'string' || data.unit.trim().length === 0) {
     errors.unit = 'Unit is required';
+  }
+  
+  if (!data.type || typeof data.type !== 'string' || data.type.trim().length === 0) {
+    errors.type = 'Item type is required';
+  }
+  
+  if (!data.importance || typeof data.importance !== 'string' || data.importance.trim().length === 0) {
+    errors.importance = 'Importance level is required';
   }
   if (!data.unit) {
     errors.unit = 'Unit is required';
@@ -278,22 +289,24 @@ const validateItemData = (data) => {
   };
 };
 
-// Data sanitization helper
+// Enhanced data sanitization helper
 const sanitizeItemData = (data) => {
   const sanitized = { ...data };
   
-  // Trim string fields
+  // Trim string fields and ensure they exist
   if (sanitized.name) sanitized.name = sanitized.name.trim();
   if (sanitized.code) sanitized.code = sanitized.code.trim();
   if (sanitized.category) sanitized.category = sanitized.category.trim();
   if (sanitized.subCategory) sanitized.subCategory = sanitized.subCategory.trim();
+  if (sanitized.customerCategory) sanitized.customerCategory = sanitized.customerCategory.trim();
+  if (sanitized.type) sanitized.type = sanitized.type.trim();
+  if (sanitized.importance) sanitized.importance = sanitized.importance.trim();
   if (sanitized.batch) sanitized.batch = sanitized.batch.trim();
   if (sanitized.unit) sanitized.unit = sanitized.unit.trim();
   if (sanitized.store) sanitized.store = sanitized.store.trim();
   if (sanitized.hsn) sanitized.hsn = sanitized.hsn.trim();
   if (sanitized.description) sanitized.description = sanitized.description.trim();
   if (sanitized.internalNotes) sanitized.internalNotes = sanitized.internalNotes.trim();
-  if (sanitized.customerCategory) sanitized.customerCategory = sanitized.customerCategory.trim();
 
   // Convert numeric fields
   if (sanitized.qty !== undefined) sanitized.qty = Number(sanitized.qty);

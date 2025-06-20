@@ -212,9 +212,41 @@ export default function ModernInventoryForm({
     setServerErrors({});
     
     try {
-      console.log('Submitting form data:', data);
+      console.log('Form data received in handleSubmit:', data);
+      console.log('Form values from form.getValues():', form.getValues());
       
-      await onSubmit(data);
+      // Ensure all required fields are present
+      const formData = {
+        name: data.name || '',
+        code: data.code || '',
+        description: data.description || '',
+        category: data.category || '',
+        subCategory: data.subCategory || '',
+        customerCategory: data.customerCategory || '',
+        type: data.type || 'Product',
+        importance: data.importance || 'Normal',
+        unit: data.unit || 'pieces',
+        qty: Number(data.qty) || 0,
+        minStock: Number(data.minStock) || 0,
+        stdCost: Number(data.stdCost) || 0,
+        purchaseCost: Number(data.purchaseCost) || 0,
+        salePrice: Number(data.salePrice) || 0,
+        mrp: Number(data.mrp) || 0,
+        gst: Number(data.gst) || 0,
+        hsn: data.hsn || '',
+        batch: data.batch || '',
+        store: data.store || '',
+        leadTime: Number(data.leadTime) || 0,
+        internalManufacturing: Boolean(data.internalManufacturing),
+        purchase: Boolean(data.purchase !== false),
+        internalNotes: data.internalNotes || '',
+        tags: data.tags || [],
+        customerPrices: data.customerPrices || []
+      };
+      
+      console.log('Processed form data for submission:', formData);
+      
+      await onSubmit(formData);
       
       // Success - close modal and reset form
       form.reset();

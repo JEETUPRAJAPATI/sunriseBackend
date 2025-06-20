@@ -641,9 +641,12 @@ export default function ModernInventoryUI() {
   // Event handlers
   const handleCreateItem = async (data) => {
     try {
+      console.log('handleCreateItem called with data:', data);
       const result = await createItemMutation.mutateAsync(data);
+      console.log('Create item result:', result);
       return result;
     } catch (error) {
+      console.error('Create item error in handler:', error);
       throw error;
     }
   };
@@ -651,9 +654,13 @@ export default function ModernInventoryUI() {
   const handleUpdateItem = async (data) => {
     if (selectedItem) {
       try {
+        console.log('handleUpdateItem called with data:', data);
+        console.log('Selected item ID:', selectedItem._id);
         const result = await updateItemMutation.mutateAsync({ id: selectedItem._id, data });
+        console.log('Update item result:', result);
         return result;
       } catch (error) {
+        console.error('Update item error in handler:', error);
         throw error;
       }
     }
