@@ -18,7 +18,7 @@ const allowedOrigins = [
   "http://localhost:5000",
   "http://localhost:5173",
   "https://sunrisebackend-xfci.onrender.com",
-  "https://sunrize.techizebuilder.com/"
+  "https://sunrize.techizebuilder.com"
 ];
 
 app.use((req, res, next) => {

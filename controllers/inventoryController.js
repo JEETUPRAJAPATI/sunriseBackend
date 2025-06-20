@@ -1,5 +1,5 @@
 import { Item, Category, CustomerCategory } from '../models/Inventory.js';
-import { USER_ROLES } from '../shared/schema.js';
+import { USER_ROLES } from '../../shared/schema.js';
 
 // Helper function to check inventory permissions
 const checkInventoryPermission = (user, action) => {
@@ -90,7 +90,7 @@ export const getItems = async (req, res) => {
     }
 
     const items = await Item.find(query)
-      .sort(sortOptions)
+      .sort({ createdAt: -1, ...sortOptions })
       .skip(skip)
       .limit(parseInt(limit));
 
