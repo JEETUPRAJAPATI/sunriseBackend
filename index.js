@@ -16,7 +16,7 @@ const server = createServer(app);
 // CORS setup
 const allowedOrigins = [
   "http://localhost:5000",
-  "https://3119338b-e714-42ee-ad89-db926ce8b72e-00-19uqh907sthf1.kirk.replit.dev"
+  "https://sunrisebackend-xfci.onrender.com"
 ];
 
 app.use((req, res, next) => {
@@ -55,7 +55,7 @@ app.use((req, res, next) => {
       let logLine = `${req.method} ${req.path} ${res.statusCode} in ${duration}ms`;
       if (capturedResponse) logLine += ` :: ${JSON.stringify(capturedResponse)}`;
       if (logLine.length > 120) logLine = logLine.slice(0, 119) + "…";
-      log(logLine);
+      console.log(logLine);
     }
   });
 
@@ -76,7 +76,7 @@ app.use((req, res, next) => {
     app.use("/api", profileRoutes);
     app.use("/api", inventoryRoutes);
 
-    log("✅ All API routes registered");
+    console.log("✅ All API routes registered");
 
     // Serve test file
     app.get("/test-profile", (req, res) => {
@@ -97,13 +97,13 @@ app.use((req, res, next) => {
     // Error handler
     app.use((err, _req, res, _next) => {
       const status = err.status || err.statusCode || 500;
-      log(`❌ Error ${status}: ${err.message}`, "error");
+      console.log(`❌ Error ${status}: ${err.message}`, "error");
       res.status(status).json({ message: err.message || "Internal Server Error" });
     });
 
     const PORT = process.env.PORT || 5000;
     server.listen(PORT, "0.0.0.0", () => {
-      log(`🚀 Server running on port ${PORT}`);
+      console.log(`🚀 Server running on port ${PORT}`);
     });
 
   } catch (err) {
