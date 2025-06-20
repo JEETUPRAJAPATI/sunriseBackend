@@ -61,7 +61,11 @@ import {
   AlertTriangle,
   BarChart3,
   TrendingUp,
-  TrendingDown
+  TrendingDown,
+  RefreshCw,
+  FolderPlus,
+  Tags,
+  Users
 } from 'lucide-react';
 
 // Modern Stats Component
@@ -145,6 +149,8 @@ export default function ModernInventoryUI() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('name');
+  const [showCategoryForm, setShowCategoryForm] = useState(false);
+  const [showCustomerCategoryForm, setShowCustomerCategoryForm] = useState(false);
 
   // Data fetching with React Query
   const { data: itemsData, isLoading: itemsLoading } = useQuery({
@@ -262,6 +268,17 @@ export default function ModernInventoryUI() {
     }
   };
 
+  const handleRefresh = () => {
+    queryClient.invalidateQueries(['/api/items']);
+    queryClient.invalidateQueries(['/api/categories']);
+    queryClient.invalidateQueries(['/api/customer-categories']);
+    queryClient.invalidateQueries(['/api/inventory/stats']);
+    toast({
+      title: "Refreshed",
+      description: "Inventory data has been refreshed successfully",
+    });
+  };
+
   // Filter and sort items
   const filteredItems = items.filter(item => {
     const matchesSearch = !searchTerm || 
@@ -291,62 +308,122 @@ export default function ModernInventoryUI() {
     <div className="space-y-6">
       <ModernStats stats={stats} isLoading={statsLoading} />
       
+      {/* Modern Action Bar */}
+      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800">
+        <CardContent className="p-6">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+            <div className="flex flex-col">
+              <h2 className="text-xl font-semibold text-blue-900 dark:text-blue-100">
+                Quick Actions
+              </h2>
+              <p className="text-sm text-blue-600 dark:text-blue-300">
+                Manage your inventory efficiently with these actions
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Button 
+                onClick={() => setIsFormOpen(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Item
+              </Button>
+              <Button 
+                onClick={() => setShowCategoryForm(true)}
+                variant="outline"
+                className="border-blue-300 text-blue-700 hover:bg-blue-50 dark:border-blue-600 dark:text-blue-300 dark:hover:bg-blue-950/30"
+              >
+                <FolderPlus className="h-4 w-4 mr-2" />
+                Add Category
+              </Button>
+              <Button 
+                onClick={() => setShowCustomerCategoryForm(true)}
+                variant="outline"
+                className="border-green-300 text-green-700 hover:bg-green-50 dark:border-green-600 dark:text-green-300 dark:hover:bg-green-950/30"
+              >
+                <Users className="h-4 w-4 mr-2" />
+                Customer Category
+              </Button>
+              <Button 
+                onClick={handleRefresh}
+                variant="outline"
+                className="border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-950/30"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="inventory" className="flex items-center gap-2">
+        <TabsList className="grid w-full grid-cols-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+          <TabsTrigger 
+            value="inventory" 
+            className="flex items-center gap-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+          >
             <Package className="h-4 w-4" />
             Inventory Items
           </TabsTrigger>
-          <TabsTrigger value="categories" className="flex items-center gap-2">
+          <TabsTrigger 
+            value="categories" 
+            className="flex items-center gap-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+          >
             <Tag className="h-4 w-4" />
             Categories
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="inventory">
-          <Card>
-            <CardHeader>
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <CardTitle className="flex items-center gap-2">
-                  <Package className="h-5 w-5" />
-                  Inventory Management
-                </CardTitle>
-                <Button onClick={() => setIsFormOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add New Item
-                </Button>
-              </div>
+          <Card className="shadow-sm border-gray-200 dark:border-gray-700">
+            <CardHeader className="bg-gray-50 dark:bg-gray-800/50">
+              <CardTitle className="flex items-center gap-2 text-gray-800 dark:text-gray-200">
+                <Package className="h-5 w-5" />
+                Inventory Management
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
+            <CardContent className="p-6">
+              <div className="space-y-6">
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="flex-1">
+                  <div className="flex-1 relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <Input
-                      placeholder="Search items..."
+                      placeholder="Search items by name, code, or description..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full"
+                      className="pl-10 w-full border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400"
                     />
                   </div>
                   <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                    <SelectTrigger className="w-[180px]">
+                    <SelectTrigger className="w-[200px] border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400">
+                      <Filter className="h-4 w-4 mr-2 text-gray-400" />
                       <SelectValue placeholder="All Categories" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Categories</SelectItem>
+                      <SelectItem value="all">
+                        <div className="flex items-center gap-2">
+                          <Package2 className="h-4 w-4" />
+                          All Categories
+                        </div>
+                      </SelectItem>
                       {categories.length > 0 && categories.map((category) => (
                         <SelectItem key={category._id || category.name} value={category.name}>
-                          {category.name}
+                          <div className="flex items-center gap-2">
+                            <Tag className="h-4 w-4" />
+                            {category.name}
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                   <Select value={sortBy} onValueChange={setSortBy}>
-                    <SelectTrigger className="w-[150px]">
+                    <SelectTrigger className="w-[150px] border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400">
+                      <BarChart3 className="h-4 w-4 mr-2 text-gray-400" />
                       <SelectValue placeholder="Sort by" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="name">Name</SelectItem>
+                      <SelectItem value="name">Name A-Z</SelectItem>
                       <SelectItem value="code">Code</SelectItem>
                       <SelectItem value="category">Category</SelectItem>
                       <SelectItem value="qty">Quantity</SelectItem>
@@ -354,17 +431,18 @@ export default function ModernInventoryUI() {
                   </Select>
                 </div>
 
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name/Code</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead>Stock</TableHead>
-                      <TableHead>Price</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="w-[100px]">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
+                <div className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-gray-50 dark:bg-gray-800/50">
+                        <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Name/Code</TableHead>
+                        <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Category</TableHead>
+                        <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Stock</TableHead>
+                        <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Price</TableHead>
+                        <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Status</TableHead>
+                        <TableHead className="w-[100px] font-semibold text-gray-900 dark:text-gray-100">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
                   <TableBody>
                     {itemsLoading ? (
                       <TableRow>
@@ -379,59 +457,75 @@ export default function ModernInventoryUI() {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredItems.map((item) => (
-                        <TableRow key={item._id}>
-                          <TableCell>
+                      filteredItems.map((item, index) => (
+                        <TableRow 
+                          key={item._id} 
+                          className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${
+                            index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50/50 dark:bg-gray-800/20'
+                          }`}
+                        >
+                          <TableCell className="py-4">
                             <div>
-                              <div className="font-medium">{item.name}</div>
-                              <div className="text-sm text-muted-foreground">{item.code}</div>
+                              <div className="font-medium text-gray-900 dark:text-gray-100">{item.name}</div>
+                              <div className="text-sm text-gray-500 dark:text-gray-400">{item.code}</div>
                             </div>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="py-4">
                             <div>
-                              <Badge variant="outline">{item.category}</Badge>
+                              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-800">
+                                {item.category}
+                              </Badge>
                               {item.subCategory && (
-                                <div className="text-xs text-muted-foreground mt-1">
+                                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                   {item.subCategory}
                                 </div>
                               )}
                             </div>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="py-4">
                             <div>
-                              <div className="font-medium">{item.qty} {item.unit}</div>
-                              <div className="text-xs text-muted-foreground">
+                              <div className="font-medium text-gray-900 dark:text-gray-100">{item.qty} {item.unit}</div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
                                 Min: {item.minStock} {item.unit}
                               </div>
                             </div>
                           </TableCell>
-                          <TableCell>₹{item.salePrice?.toLocaleString() || 0}</TableCell>
-                          <TableCell>
+                          <TableCell className="py-4">
+                            <span className="font-medium text-green-600 dark:text-green-400">
+                              ₹{item.salePrice?.toLocaleString() || 0}
+                            </span>
+                          </TableCell>
+                          <TableCell className="py-4">
                             <Badge 
                               variant={(item.qty || 0) <= (item.minStock || 0) ? 'destructive' : 'default'}
+                              className={
+                                (item.qty || 0) <= (item.minStock || 0) 
+                                  ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' 
+                                  : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                              }
                             >
                               {(item.qty || 0) <= (item.minStock || 0) ? 'Low Stock' : 'In Stock'}
                             </Badge>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="py-4">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800">
                                   <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleView(item)}>
+                              <DropdownMenuContent align="end" className="w-40">
+                                <DropdownMenuItem onClick={() => handleView(item)} className="hover:bg-blue-50 dark:hover:bg-blue-950/30">
                                   <Eye className="h-4 w-4 mr-2" />
-                                  View
+                                  View Details
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleEdit(item)}>
+                                <DropdownMenuItem onClick={() => handleEdit(item)} className="hover:bg-green-50 dark:hover:bg-green-950/30">
                                   <Edit className="h-4 w-4 mr-2" />
-                                  Edit
+                                  Edit Item
                                 </DropdownMenuItem>
                                 <DropdownMenuItem 
                                   onClick={() => handleDelete(item)}
-                                  className="text-red-600"
+                                  className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 dark:text-red-400"
                                 >
                                   <Trash2 className="h-4 w-4 mr-2" />
                                   Delete
@@ -442,15 +536,21 @@ export default function ModernInventoryUI() {
                         </TableRow>
                       ))
                     )}
-                  </TableBody>
-                </Table>
+                    </TableBody>
+                  </Table>
+                </div>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="categories">
-          <CategoryManagement />
+          <CategoryManagement 
+            showCategoryForm={showCategoryForm}
+            setShowCategoryForm={setShowCategoryForm}
+            showCustomerCategoryForm={showCustomerCategoryForm}
+            setShowCustomerCategoryForm={setShowCustomerCategoryForm}
+          />
         </TabsContent>
       </Tabs>
 
