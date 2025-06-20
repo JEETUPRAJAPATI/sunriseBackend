@@ -157,11 +157,14 @@ export const showSmartToast = (error, context = '') => {
     description,
     variant,
     duration: getDurationBySeverity(errorInfo.severity),
-    action: errorInfo.action ? {
-      altText: errorInfo.action,
-      label: errorInfo.action,
-      onClick: () => handleErrorAction(errorInfo)
-    } : undefined
+    action: errorInfo.action ? (
+      <button
+        onClick={() => handleErrorAction(errorInfo)}
+        className="inline-flex h-8 shrink-0 items-center justify-center rounded-md border bg-transparent px-3 text-sm font-medium transition-colors hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+      >
+        {errorInfo.action}
+      </button>
+    ) : undefined
   });
 
   // Log error for debugging

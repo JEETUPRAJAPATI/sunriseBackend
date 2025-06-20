@@ -6,9 +6,14 @@ import {
   showSmartToast, 
   showSuccessToast, 
   showWarningToast,
-  showLoadingToast 
+  showNetworkStatusToast 
 } from '@/lib/toast-utils';
-import { api } from '@/services/api';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import ModernInventoryForm from './ModernInventoryForm';
+import ViewItemModal from './ViewItemModal';
+import DeleteConfirmDialog from './DeleteConfirmDialog';
+import CategoryManagement from './CategoryManagement';
+import { apiRequest } from '@/lib/queryClient';
 import {
   Card,
   CardContent,
@@ -17,12 +22,11 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   Table,
   TableBody,
@@ -46,23 +50,23 @@ import {
 } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
 import {
+  Package,
   Plus,
   Search,
   Filter,
+  MoreHorizontal,
   Edit,
   Trash2,
-  Package,
+  Eye,
+  Tag,
+  Package2,
   DollarSign,
-  TrendingUp,
   AlertTriangle,
-  Settings,
-  FolderOpen,
-  RefreshCw,
   BarChart3,
+  TrendingUp,
+  TrendingDown
   Package2,
   Loader2,
   CheckCircle2,
