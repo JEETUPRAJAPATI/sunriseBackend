@@ -460,29 +460,31 @@ export default function InventoryModern() {
         </TabsContent>
       </Tabs>
 
-      {/* Add Item Modal - Using Test Form */}
-      <InventoryFormTest
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        categories={categories}
-        customerCategories={customerCategories}
-        onSubmit={handleCreateItem}
-        isLoading={createItemMutation.isPending}
-      />
+      {/* Modern Inventory UI */}
+      <div className="hidden">
+        {/* Hidden forms for debugging */}
+        <InventoryFormTest
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+          categories={categories}
+          customerCategories={customerCategories}
+          onSubmit={handleCreateItem}
+          isLoading={createItemMutation.isPending}
+        />
 
-      {/* Edit Item Modal - Using Test Form */}
-      <InventoryFormTest
-        isOpen={isEditModalOpen}
-        onClose={() => {
-          setIsEditModalOpen(false);
-          setSelectedItem(null);
-        }}
-        item={selectedItem}
-        categories={categories}
-        customerCategories={customerCategories}
-        onSubmit={handleUpdateItem}
-        isLoading={updateItemMutation.isPending}
-      />
+        <InventoryFormTest
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setSelectedItem(null);
+          }}
+          item={selectedItem}
+          categories={categories}
+          customerCategories={customerCategories}
+          onSubmit={handleUpdateItem}
+          isLoading={updateItemMutation.isPending}
+        />
+      </div>
 
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteItem} onOpenChange={() => setDeleteItem(null)}>
