@@ -141,8 +141,8 @@ export default function ModernInventoryUI() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('name');
-  const [showCategoryForm, setShowCategoryForm] = useState(false);
-  const [showCustomerCategoryForm, setShowCustomerCategoryForm] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [showCustomerCategoryModal, setShowCustomerCategoryModal] = useState(false);
 
   // Data fetching with React Query
   const { data: itemsData, isLoading: itemsLoading } = useQuery({
@@ -312,7 +312,7 @@ export default function ModernInventoryUI() {
                 Add Item
               </Button>
               <Button 
-                onClick={() => setShowCategoryForm(true)}
+                onClick={() => setShowCategoryModal(true)}
                 variant="outline"
                 className="border-blue-300 text-blue-700 hover:bg-blue-50 dark:border-blue-600 dark:text-blue-300 dark:hover:bg-blue-950/30"
               >
@@ -320,7 +320,7 @@ export default function ModernInventoryUI() {
                 Add Category
               </Button>
               <Button 
-                onClick={() => setShowCustomerCategoryForm(true)}
+                onClick={() => setShowCustomerCategoryModal(true)}
                 variant="outline"
                 className="border-green-300 text-green-700 hover:bg-green-50 dark:border-green-600 dark:text-green-300 dark:hover:bg-green-950/30"
               >
@@ -568,10 +568,10 @@ export default function ModernInventoryUI() {
       />
 
       <CategoryManagement 
-        showCategoryForm={showCategoryForm}
-        setShowCategoryForm={setShowCategoryForm}
-        showCustomerCategoryForm={showCustomerCategoryForm}
-        setShowCustomerCategoryForm={setShowCustomerCategoryForm}
+        showCategoryModal={showCategoryModal}
+        setShowCategoryModal={setShowCategoryModal}
+        showCustomerCategoryModal={showCustomerCategoryModal}
+        setShowCustomerCategoryModal={setShowCustomerCategoryModal}
       />
     </div>
   );
