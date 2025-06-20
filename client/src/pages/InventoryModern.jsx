@@ -193,12 +193,24 @@ export default function InventoryModern() {
 
   // Event handlers
   const handleCreateItem = async (data) => {
-    await createItemMutation.mutateAsync(data);
+    try {
+      const result = await createItemMutation.mutateAsync(data);
+      return result;
+    } catch (error) {
+      console.error('Create item error:', error);
+      throw error;
+    }
   };
 
   const handleUpdateItem = async (data) => {
     if (selectedItem) {
-      await updateItemMutation.mutateAsync({ id: selectedItem._id, data });
+      try {
+        const result = await updateItemMutation.mutateAsync({ id: selectedItem._id, data });
+        return result;
+      } catch (error) {
+        console.error('Update item error:', error);
+        throw error;
+      }
     }
   };
 

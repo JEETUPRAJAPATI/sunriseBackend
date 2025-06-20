@@ -38,8 +38,10 @@ const itemSchema = z.object({
   name: z.string().min(2, 'Item name must be at least 2 characters').max(100, 'Name must be less than 100 characters'),
   description: z.string().optional(),
   category: z.string().min(1, 'Category is required'),
-  customerCategory: z.string().optional(),
-  code: z.string().optional(),
+  customerCategory: z.string().min(1, 'Customer Category is required'),
+  code: z.string().optional().refine((val) => !val || val.length >= 3, {
+    message: 'Item code must be at least 3 characters'
+  }),
   qty: z.number().min(0, 'Quantity cannot be negative').default(0),
   unit: z.string().min(1, 'Unit is required'),
   stdCost: z.number().min(0, 'Cost cannot be negative').default(0),
@@ -139,7 +141,7 @@ export default function ModernInventoryForm({
       form.reset(formData);
       setSelectedCategory(item.category || '');
     } else {
-      form.reset({
+      const defaultValues = {
         name: '',
         description: '',
         category: '',
@@ -163,7 +165,9 @@ export default function ModernInventoryForm({
         internalNotes: '',
         minStock: 0,
         leadTime: 0,
-      });
+      };
+      
+      form.reset(defaultValues);
       setSelectedCategory('');
     }
   }, [item, form, isOpen]);
@@ -189,9 +193,13 @@ export default function ModernInventoryForm({
       
       // Success toast is handled by the parent component
     } catch (error) {
-      // Handle validation errors
+      console.error('Form submission error:', error);
+      
+      // Handle validation errors from backend
       if (error.response?.data?.errors) {
         const errors = error.response.data.errors;
+        
+        // Set errors on form fields
         Object.keys(errors).forEach(field => {
           form.setError(field, {
             type: 'server',
@@ -199,21 +207,27 @@ export default function ModernInventoryForm({
           });
         });
         
-        // Show general validation error toast
+        // Show summary toast with field count
+        const errorCount = Object.keys(errors).length;
+        const errorFields = Object.keys(errors).join(', ');
+        
         toast({
           title: "Validation Failed",
-          description: "Please check the form for errors and try again.",
+          description: `Please fix ${errorCount} error${errorCount > 1 ? 's' : ''}: ${errorFields}`,
           variant: "destructive",
         });
         
-        // Scroll to first error
+        // Scroll to first error field
         const firstErrorField = Object.keys(errors)[0];
-        const errorElement = document.querySelector(`[name="${firstErrorField}"]`);
-        if (errorElement) {
-          errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          errorElement.focus();
-        }
+        setTimeout(() => {
+          const errorElement = document.querySelector(`[name="${firstErrorField}"]`);
+          if (errorElement) {
+            errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            errorElement.focus();
+          }
+        }, 100);
       } else {
+        // General error
         toast({
           title: "Error",
           description: error.response?.data?.message || `Failed to ${item ? 'update' : 'create'} item`,
@@ -273,7 +287,7 @@ export default function ModernInventoryForm({
                             className={form.formState.errors.name ? 'border-red-500 focus:border-red-500' : ''}
                           />
                         </FormControl>
-                        <FormMessage />
+                        <FormMessage className="text-red-500 text-sm" />
                       </FormItem>
                     )}
                   />
@@ -393,7 +407,7 @@ export default function ModernInventoryForm({
                             field.onChange(value);
                             setSelectedCategory(value);
                           }} 
-                          defaultValue={field.value}
+                          value={field.value}
                         >
                           <FormControl>
                             <SelectTrigger className={form.formState.errors.category ? 'border-red-500' : ''}>
@@ -408,7 +422,7 @@ export default function ModernInventoryForm({
                             ))}
                           </SelectContent>
                         </Select>
-                        <FormMessage />
+                        <FormMessage className="text-red-500 text-sm" />
                       </FormItem>
                     )}
                   />
@@ -419,7 +433,7 @@ export default function ModernInventoryForm({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-red-500">Customer Category *</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger className={form.formState.errors.customerCategory ? 'border-red-500' : ''}>
                               <SelectValue placeholder="Select customer category" />
@@ -433,7 +447,7 @@ export default function ModernInventoryForm({
                             ))}
                           </SelectContent>
                         </Select>
-                        <FormMessage />
+                        <FormMessage className="text-red-500 text-sm" />
                       </FormItem>
                     )}
                   />
@@ -632,7 +646,7 @@ export default function ModernInventoryForm({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-red-500">Unit *</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger className={form.formState.errors.unit ? 'border-red-500' : ''}>
                               <SelectValue placeholder="Select unit" />
@@ -646,7 +660,7 @@ export default function ModernInventoryForm({
                             ))}
                           </SelectContent>
                         </Select>
-                        <FormMessage />
+                        <FormMessage className="text-red-500 text-sm" />
                       </FormItem>
                     )}
                   />
@@ -716,7 +730,11 @@ export default function ModernInventoryForm({
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={isLoading || isSubmitting}>
+              <Button 
+                type="submit" 
+                disabled={isLoading || isSubmitting || Object.keys(form.formState.errors).length > 0}
+                className={Object.keys(form.formState.errors).length > 0 ? 'opacity-50 cursor-not-allowed' : ''}
+              >
                 {(isLoading || isSubmitting) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {item ? 'Update Item' : 'Create Item'}
               </Button>
