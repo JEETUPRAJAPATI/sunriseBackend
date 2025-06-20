@@ -108,8 +108,9 @@ const itemSchema = new mongoose.Schema({
   },
   customerCategory: {
     type: String,
-    required: true,
-    trim: true
+    required: false,
+    trim: true,
+    default: 'Retail'
   },
   tags: [{
     type: String,

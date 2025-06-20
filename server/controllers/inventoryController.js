@@ -235,8 +235,9 @@ const validateItemData = (data, isUpdate = false) => {
     errors.category = 'Category is required';
   }
   
-  if (!data.customerCategory || typeof data.customerCategory !== 'string' || data.customerCategory.trim().length === 0) {
-    errors.customerCategory = 'Customer Category is required';
+  // Customer category is optional with default value
+  if (data.customerCategory && typeof data.customerCategory !== 'string') {
+    errors.customerCategory = 'Customer Category must be a valid string';
   }
   
   if (!data.unit || typeof data.unit !== 'string' || data.unit.trim().length === 0) {
