@@ -1,4 +1,6 @@
+import React from 'react';
 import { toast } from '@/hooks/use-toast';
+import { ToastAction } from '@/components/ui/toast';
 
 // Error categories for smart notifications
 export const ERROR_CATEGORIES = {
@@ -157,11 +159,11 @@ export const showSmartToast = (error, context = '') => {
     description,
     variant,
     duration: getDurationBySeverity(errorInfo.severity),
-    action: errorInfo.action ? {
+    action: errorInfo.action ? React.createElement(ToastAction, {
       altText: errorInfo.action,
-      label: errorInfo.action,
-      onClick: () => handleErrorAction(errorInfo)
-    } : undefined
+      onClick: () => handleErrorAction(errorInfo),
+      children: errorInfo.action
+    }) : undefined
   });
 
   // Log error for debugging

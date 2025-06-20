@@ -173,17 +173,15 @@ export const createItem = async (req, res) => {
       });
     }
 
-    // Auto-generate code if not provided
+    // Auto-generate code if not provided or if code already exists
     if (!itemData.code || itemData.code.trim() === '') {
       itemData.code = await generateItemCode(itemData.type);
     } else {
       // Check if code already exists
       const existingItem = await Item.findOne({ code: itemData.code.trim() });
       if (existingItem) {
-        return res.status(400).json({ 
-          message: 'Validation failed',
-          errors: { code: 'Item code already exists' }
-        });
+        console.log('Code already exists, auto-generating new code...');
+        itemData.code = await generateItemCode(itemData.type);
       }
     }
 
