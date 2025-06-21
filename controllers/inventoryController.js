@@ -1,4 +1,6 @@
 import { Item, Category, CustomerCategory } from '../models/Inventory.js';
+import * as XLSX from 'xlsx';
+import multer from 'multer';
 import { USER_ROLES } from '../shared/schema.js';
 
 // Helper function to check inventory permissions
@@ -77,9 +79,12 @@ export const getItems = async (req, res) => {
       query.$expr = { $lte: ['$qty', '$minStock'] };
     }
 
-    // Sort options
+    // Sort options - prioritize newest items
     const sortOptions = {};
     sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
+    if (sortBy !== 'createdAt') {
+      sortOptions.createdAt = -1;
+    }
 
     // Default to createdAt descending for latest records first
     if (!sortBy || sortBy === 'name') {
@@ -147,6 +152,12 @@ export const getItemById = async (req, res) => {
     }
 
     const { id } = req.params;
+
+    // Handle special routes like 'export'
+    if (id === 'export') {
+      return exportItemsToExcel(req, res);
+    }
+
     const item = await Item.findById(id);
 
     if (!item) {
@@ -740,6 +751,257 @@ export const deleteCustomerCategory = async (req, res) => {
   } catch (error) {
     console.error('Delete customer category error:', error);
     res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Configure multer for file upload
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedMimes = [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel'
+    ];
+    if (allowedMimes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only Excel files (.xlsx, .xls) are allowed'), false);
+    }
+  }
+});
+
+// Export items to Excel - Simplified implementation
+export const exportItemsToExcel = async (req, res) => {
+  try {
+    console.log('Starting Excel export for inventory items');
+    const items = await Item.find({}).sort({ createdAt: -1 });
+    console.log(`Found ${items.length} items to export`);
+
+    if (items.length === 0) {
+      return res.status(404).json({ message: 'No items found to export', success: false });
+    }
+
+    // Create simple data structure for Excel
+    const excelData = items.map((item, index) => ({
+      'Serial No': index + 1,
+      'Item Code': item.code || '',
+      'Item Name': item.name || '',
+      'Description': item.description || '',
+      'Category': item.category || '',
+      'Sub Category': item.subCategory || '',
+      'Customer Category': item.customerCategory || '',
+      'Unit': item.unit || 'pieces',
+      'Purchase Price': item.purchasePrice || 0,
+      'Sale Price': item.salePrice || 0,
+      'Current Stock': item.qty || 0,
+      'Min Stock': item.minStock || 0,
+      'Max Stock': item.maxStock || 0,
+      'Location': item.location || '',
+      'Supplier': item.supplier || '',
+      'Created Date': item.createdAt ? item.createdAt.toISOString().split('T')[0] : ''
+    }));
+
+    console.log(`Prepared ${excelData.length} items for Excel export`);
+
+    // Generate Excel file
+    const excelBuffer = createSimpleExcel(excelData, 'Inventory Items');
+
+    const filename = `inventory_items_${Date.now()}.xlsx`;
+
+    console.log(`Generated Excel file: ${filename}, Size: ${excelBuffer.length} bytes`);
+
+    // Send file
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(excelBuffer);
+
+    console.log(`Excel file sent successfully: ${filename}`);
+
+  } catch (error) {
+    console.error('Excel export error:', error);
+    return res.status(500).json({
+      message: 'Failed to export items to Excel',
+      error: error.message,
+      success: false
+    });
+  }
+};
+
+// Import items from Excel
+export const importItemsFromExcel = [upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    // Parse Excel file
+    const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+    if (jsonData.length === 0) {
+      return res.status(400).json({ message: 'Excel file is empty or has no valid data' });
+    }
+
+    const results = {
+      total: jsonData.length,
+      successful: 0,
+      failed: 0,
+      errors: []
+    };
+
+    // Process each row
+    for (let i = 0; i < jsonData.length; i++) {
+      const row = jsonData[i];
+      const rowNumber = i + 2; // Excel row number (accounting for header)
+
+      try {
+        // Map Excel columns to database fields
+        const itemData = {
+          code: row['Item Code'] || row['Code'] || `AUTO-${Date.now()}-${i}`,
+          name: row['Item Name'] || row['Name'] || '',
+          category: row['Category'] || '',
+          subCategory: row['Subcategory'] || row['Sub Category'] || row['SubCategory'] || '',
+          customerCategory: row['Customer Category'] || 'General',
+          unit: row['Unit'] || 'pieces',
+          purchasePrice: parseFloat(row['Purchase Price'] || row['Cost Price'] || row['Cost'] || 0),
+          salePrice: parseFloat(row['Sale Price'] || row['Unit Price'] || row['Price'] || 0),
+          qty: parseInt(row['Quantity'] || row['Qty'] || 0),
+          minStock: parseInt(row['Min Stock'] || row['Minimum Stock'] || 0),
+          maxStock: parseInt(row['Max Stock'] || row['Maximum Stock'] || 0),
+          location: row['Location'] || '',
+          description: row['Description'] || '',
+          supplier: row['Supplier'] || ''
+        };
+
+        // Validate required fields
+        if (!itemData.name) {
+          results.errors.push(`Row ${rowNumber}: Item name is required`);
+          results.failed++;
+          continue;
+        }
+
+        if (!itemData.category) {
+          results.errors.push(`Row ${rowNumber}: Category is required`);
+          results.failed++;
+          continue;
+        }
+
+        // Check if item code already exists
+        const existingItem = await Item.findOne({ code: itemData.code });
+        if (existingItem) {
+          // Update existing item
+          const updatedItem = await Item.findByIdAndUpdate(existingItem._id, itemData, { new: true });
+          console.log(`Updated existing item: ${itemData.name} (${itemData.code}) - ID: ${updatedItem._id}`);
+        } else {
+          // Create new item
+          const newItem = await Item.create(itemData);
+          console.log(`Created new item: ${itemData.name} (${itemData.code}) - ID: ${newItem._id}`);
+        }
+
+        results.successful++;
+      } catch (rowError) {
+        console.error(`Error processing row ${rowNumber}:`, rowError);
+        results.errors.push(`Row ${rowNumber}: ${rowError.message}`);
+        results.failed++;
+      }
+    }
+
+    // Final verification
+    const finalCount = await Item.countDocuments();
+    console.log(`Final items in database after import: ${finalCount}`);
+
+    res.json({
+      message: `Import completed: ${results.successful} successful, ${results.failed} failed`,
+      success: results.failed === 0,
+      results,
+      finalCount
+    });
+
+  } catch (error) {
+    console.error('Error importing Excel file:', error);
+    res.status(500).json({
+      message: 'Error importing Excel file',
+      error: error.message,
+      success: false
+    });
+  }
+}];
+
+// Export categories to Excel - Simplified implementation
+export const exportCategoriesToExcel = async (req, res) => {
+  try {
+    console.log('Starting Excel export for categories');
+    const categories = await Category.find({}).sort({ createdAt: -1 });
+    console.log(`Found ${categories.length} categories to export`);
+
+    if (categories.length === 0) {
+      return res.status(404).json({ message: 'No categories found to export', success: false });
+    }
+
+    const excelData = categories.map((category, index) => ({
+      'Serial No': index + 1,
+      'Category Name': category.name || '',
+      'Description': category.description || '',
+      'Subcategories': Array.isArray(category.subcategories) ? category.subcategories.join(', ') : '',
+      'Created Date': category.createdAt ? category.createdAt.toISOString().split('T')[0] : ''
+    }));
+
+    const excelBuffer = createSimpleExcel(excelData, 'Categories');
+    const filename = `categories_${Date.now()}.xlsx`;
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(excelBuffer);
+
+    console.log(`Categories Excel file sent: ${filename}`);
+
+  } catch (error) {
+    console.error('Categories Excel export error:', error);
+    return res.status(500).json({
+      message: 'Failed to export categories to Excel',
+      error: error.message,
+      success: false
+    });
+  }
+};
+
+// Export customer categories to Excel - Simplified implementation
+export const exportCustomerCategoriesToExcel = async (req, res) => {
+  try {
+    console.log('Starting Excel export for customer categories');
+    const customerCategories = await CustomerCategory.find({}).sort({ createdAt: -1 });
+    console.log(`Found ${customerCategories.length} customer categories to export`);
+
+    if (customerCategories.length === 0) {
+      return res.status(404).json({ message: 'No customer categories found to export', success: false });
+    }
+
+    const excelData = customerCategories.map((category, index) => ({
+      'Serial No': index + 1,
+      'Category Name': category.name || '',
+      'Description': category.description || '',
+      'Created Date': category.createdAt ? category.createdAt.toISOString().split('T')[0] : ''
+    }));
+
+    const excelBuffer = createSimpleExcel(excelData, 'Customer Categories');
+    const filename = `customer_categories_${Date.now()}.xlsx`;
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(excelBuffer);
+
+    console.log(`Customer categories Excel file sent: ${filename}`);
+
+  } catch (error) {
+    console.error('Customer categories Excel export error:', error);
+    return res.status(500).json({
+      message: 'Failed to export customer categories to Excel',
+      error: error.message,
+      success: false
+    });
   }
 };
 

@@ -1,268 +1,237 @@
 import Customer from '../models/Customer.js';
-import { USER_ROLES } from '../shared/schema.js';
+import * as XLSX from 'xlsx';
+import multer from 'multer';
+
+// Configure multer for file upload
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedMimes = [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel'
+    ];
+    if (allowedMimes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only Excel files (.xlsx, .xls) are allowed'), false);
+    }
+  }
+});
 
 export const getCustomers = async (req, res) => {
   try {
-    const { page = 1, limit = 10, customerType, unit, search } = req.query;
-    const skip = (page - 1) * limit;
-
-    let query = {};
-
-    if (req.user.role !== USER_ROLES.SUPER_USER) {
-      query.unit = req.user.unit;
-    } else if (unit) {
-      query.unit = unit;
-    }
-
-    if (customerType) {
-      query.customerType = customerType;
-    }
-
-    if (search) {
-      query.$or = [
-        { customerName: { $regex: search, $options: 'i' } },
-        { customerCode: { $regex: search, $options: 'i' } },
-        { contactPerson: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
-        { phone: { $regex: search, $options: 'i' } }
-      ];
-    }
-
-    const customers = await Customer.find(query)
-      .sort({ customerName: 1 })
-      .skip(skip)
-      .limit(parseInt(limit));
-
-    const total = await Customer.countDocuments(query);
-
-    res.json({
-      customers,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / limit)
-      }
-    });
+    const customers = await Customer.find({}).sort({ createdAt: -1 });
+    res.json({ customers });
   } catch (error) {
-    console.error('Get customers error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('Error fetching customers:', error);
+    res.status(500).json({ message: 'Error fetching customers' });
   }
 };
 
 export const getCustomerById = async (req, res) => {
   try {
-    const { id } = req.params;
-    const customer = await Customer.findById(id);
-
+    const customer = await Customer.findById(req.params.id);
     if (!customer) {
       return res.status(404).json({ message: 'Customer not found' });
     }
-
-    if (req.user.role !== USER_ROLES.SUPER_USER && customer.unit !== req.user.unit) {
-      return res.status(403).json({ message: 'Access denied' });
-    }
-
-    res.json({ customer });
+    res.json(customer);
   } catch (error) {
-    console.error('Get customer by ID error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('Error fetching customer:', error);
+    res.status(500).json({ message: 'Error fetching customer' });
   }
 };
 
 export const createCustomer = async (req, res) => {
   try {
-    const {
-      customerName,
-      contactPerson,
-      email,
-      phone,
-      alternatePhone,
-      address,
-      billingAddress,
-      gstNumber,
-      panNumber,
-      creditLimit,
-      creditDays,
-      customerType,
-      notes
-    } = req.body;
-
-    if (!customerName || !contactPerson || !email || !phone || !address) {
-      return res.status(400).json({ message: 'Customer name, contact person, email, phone, and address are required' });
-    }
-
-    // Check if email already exists
-    const existingCustomer = await Customer.findOne({ email: email.toLowerCase() });
-    if (existingCustomer) {
-      return res.status(400).json({ message: 'Customer with this email already exists' });
-    }
-
-    const customerData = {
-      customerName,
-      contactPerson,
-      email: email.toLowerCase(),
-      phone,
-      alternatePhone,
-      address,
-      billingAddress: billingAddress || address,
-      gstNumber,
-      panNumber,
-      creditLimit: creditLimit || 0,
-      creditDays: creditDays || 30,
-      unit: req.user.role === USER_ROLES.SUPER_USER ? req.body.unit : req.user.unit,
-      customerType: customerType || 'Regular',
-      notes
-    };
-
-    const customer = await Customer.create(customerData);
-
-    res.status(201).json({
-      message: 'Customer created successfully',
-      customer
-    });
+    const customer = new Customer(req.body);
+    await customer.save();
+    res.status(201).json({ message: 'Customer created successfully', customer });
   } catch (error) {
-    console.error('Create customer error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('Error creating customer:', error);
+    res.status(500).json({ message: 'Error creating customer' });
   }
 };
 
 export const updateCustomer = async (req, res) => {
   try {
-    const { id } = req.params;
-    const {
-      customerName,
-      contactPerson,
-      email,
-      phone,
-      alternatePhone,
-      address,
-      billingAddress,
-      gstNumber,
-      panNumber,
-      creditLimit,
-      creditDays,
-      customerType,
-      isActive,
-      notes
-    } = req.body;
-
-    const customer = await Customer.findById(id);
-
+    const customer = await Customer.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true, runValidators: true }
+    );
     if (!customer) {
       return res.status(404).json({ message: 'Customer not found' });
     }
-
-    if (req.user.role !== USER_ROLES.SUPER_USER && customer.unit !== req.user.unit) {
-      return res.status(403).json({ message: 'Access denied' });
-    }
-
-    // Check if email already exists (excluding current customer)
-    if (email && email !== customer.email) {
-      const existingCustomer = await Customer.findOne({
-        email: email.toLowerCase(),
-        _id: { $ne: id }
-      });
-      if (existingCustomer) {
-        return res.status(400).json({ message: 'Customer with this email already exists' });
-      }
-    }
-
-    const updateData = {};
-    if (customerName) updateData.customerName = customerName;
-    if (contactPerson) updateData.contactPerson = contactPerson;
-    if (email) updateData.email = email.toLowerCase();
-    if (phone) updateData.phone = phone;
-    if (alternatePhone !== undefined) updateData.alternatePhone = alternatePhone;
-    if (address) updateData.address = address;
-    if (billingAddress) updateData.billingAddress = billingAddress;
-    if (gstNumber !== undefined) updateData.gstNumber = gstNumber;
-    if (panNumber !== undefined) updateData.panNumber = panNumber;
-    if (creditLimit !== undefined) updateData.creditLimit = creditLimit;
-    if (creditDays !== undefined) updateData.creditDays = creditDays;
-    if (customerType) updateData.customerType = customerType;
-    if (typeof isActive === 'boolean') updateData.isActive = isActive;
-    if (notes !== undefined) updateData.notes = notes;
-
-    const updatedCustomer = await Customer.findByIdAndUpdate(
-      id,
-      updateData,
-      { new: true }
-    );
-
-    res.json({
-      message: 'Customer updated successfully',
-      customer: updatedCustomer
-    });
+    res.json({ message: 'Customer updated successfully', customer });
   } catch (error) {
-    console.error('Update customer error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('Error updating customer:', error);
+    res.status(500).json({ message: 'Error updating customer' });
   }
 };
 
 export const deleteCustomer = async (req, res) => {
   try {
-    const { id } = req.params;
-
-    const customer = await Customer.findById(id);
-
+    const customer = await Customer.findByIdAndDelete(req.params.id);
     if (!customer) {
       return res.status(404).json({ message: 'Customer not found' });
     }
-
-    if (req.user.role !== USER_ROLES.SUPER_USER && customer.unit !== req.user.unit) {
-      return res.status(403).json({ message: 'Access denied' });
-    }
-
-    // Check if customer has orders
-    const Order = (await import('../models/Order.js')).default;
-    const hasOrders = await Order.findOne({ customer: id });
-
-    if (hasOrders) {
-      return res.status(400).json({ message: 'Cannot delete customer with existing orders' });
-    }
-
-    await Customer.findByIdAndDelete(id);
-
     res.json({ message: 'Customer deleted successfully' });
   } catch (error) {
-    console.error('Delete customer error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('Error deleting customer:', error);
+    res.status(500).json({ message: 'Error deleting customer' });
   }
 };
 
 export const getCustomerStats = async (req, res) => {
   try {
-    const { unit } = req.query;
-    let query = {};
-
-    if (req.user.role !== USER_ROLES.SUPER_USER) {
-      query.unit = req.user.unit;
-    } else if (unit) {
-      query.unit = unit;
-    }
-
-    const [totalCustomers, activeCustomers, customersByType] = await Promise.all([
-      Customer.countDocuments(query),
-      Customer.countDocuments({ ...query, isActive: true }),
-      Customer.aggregate([
-        { $match: { ...query, isActive: true } },
-        {
-          $group: {
-            _id: '$customerType',
-            count: { $sum: 1 }
-          }
-        }
-      ])
-    ]);
-
+    const totalCustomers = await Customer.countDocuments();
+    const activeCustomers = await Customer.countDocuments({ status: 'active' });
+    
     res.json({
-      totalCustomers,
-      activeCustomers,
-      customersByType
+      total: totalCustomers,
+      active: activeCustomers,
+      inactive: totalCustomers - activeCustomers
     });
   } catch (error) {
-    console.error('Get customer stats error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('Error fetching customer stats:', error);
+    res.status(500).json({ message: 'Error fetching customer statistics' });
   }
 };
+
+// Export customers to Excel
+export const exportCustomersToExcel = async (req, res) => {
+  try {
+    const customers = await Customer.find({}).sort({ createdAt: -1 });
+    
+    const excelData = customers.map(customer => ({
+      'Customer Name': customer.name,
+      'Email': customer.email || '',
+      'Phone': customer.phone || '',
+      'Company': customer.company || '',
+      'Address': customer.address || '',
+      'City': customer.city || '',
+      'State': customer.state || '',
+      'Country': customer.country || '',
+      'Postal Code': customer.postalCode || '',
+      'Status': customer.status || 'active',
+      'Customer Type': customer.customerType || '',
+      'Created Date': customer.createdAt ? customer.createdAt.toISOString().split('T')[0] : ''
+    }));
+
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    
+    const colWidths = [];
+    Object.keys(excelData[0] || {}).forEach(key => {
+      const maxLength = Math.max(
+        key.length,
+        ...excelData.map(row => String(row[key] || '').length)
+      );
+      colWidths.push({ width: Math.min(maxLength + 2, 50) });
+    });
+    worksheet['!cols'] = colWidths;
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Customers');
+    
+    const excelBuffer = XLSX.write(workbook, {
+      type: 'buffer',
+      bookType: 'xlsx'
+    });
+
+    const filename = `customers_${Date.now()}.xlsx`;
+    
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(excelBuffer);
+
+    console.log(`Customers Excel file sent: ${filename}`);
+  } catch (error) {
+    console.error('Error exporting customers to Excel:', error);
+    res.status(500).json({ message: 'Error exporting customers to Excel', error: error.message });
+  }
+};
+
+// Import customers from Excel
+export const importCustomersFromExcel = [upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+    if (jsonData.length === 0) {
+      return res.status(400).json({ message: 'Excel file is empty or has no valid data' });
+    }
+
+    const results = {
+      total: jsonData.length,
+      successful: 0,
+      failed: 0,
+      errors: []
+    };
+
+    for (let i = 0; i < jsonData.length; i++) {
+      const row = jsonData[i];
+      const rowNumber = i + 2;
+
+      try {
+        const customerData = {
+          name: row['Customer Name'] || row['Name'] || '',
+          email: row['Email'] || '',
+          phone: row['Phone'] || '',
+          company: row['Company'] || '',
+          address: row['Address'] || '',
+          city: row['City'] || '',
+          state: row['State'] || '',
+          country: row['Country'] || '',
+          postalCode: row['Postal Code'] || row['Zip Code'] || '',
+          status: row['Status'] || 'active',
+          customerType: row['Customer Type'] || row['Type'] || ''
+        };
+
+        if (!customerData.name) {
+          results.errors.push(`Row ${rowNumber}: Customer name is required`);
+          results.failed++;
+          continue;
+        }
+
+        // Check if customer with same email exists
+        if (customerData.email) {
+          const existingCustomer = await Customer.findOne({ email: customerData.email });
+          if (existingCustomer) {
+            await Customer.findByIdAndUpdate(existingCustomer._id, customerData);
+          } else {
+            await Customer.create(customerData);
+          }
+        } else {
+          await Customer.create(customerData);
+        }
+
+        results.successful++;
+      } catch (rowError) {
+        console.error(`Error processing row ${rowNumber}:`, rowError);
+        results.errors.push(`Row ${rowNumber}: ${rowError.message}`);
+        results.failed++;
+      }
+    }
+
+    res.json({
+      message: `Import completed: ${results.successful} successful, ${results.failed} failed`,
+      success: results.failed === 0,
+      results
+    });
+
+  } catch (error) {
+    console.error('Error importing Excel file:', error);
+    res.status(500).json({ 
+      message: 'Error importing Excel file', 
+      error: error.message,
+      success: false
+    });
+  }
+}];

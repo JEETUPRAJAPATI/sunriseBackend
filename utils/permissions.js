@@ -1,4 +1,32 @@
-import { USER_ROLES, MODULES, PERMISSIONS } from '../shared/schema.js';
+// Define constants directly to avoid import issues
+const USER_ROLES = {
+  SUPER_USER: 'Super User',
+  UNIT_HEAD: 'Unit Head',
+  PRODUCTION: 'Production',
+  PACKING: 'Packing',
+  DISPATCH: 'Dispatch',
+  ACCOUNTS: 'Accounts'
+};
+
+const MODULES = {
+  DASHBOARD: 'Dashboard',
+  ORDERS: 'Orders',
+  MANUFACTURING: 'Manufacturing',
+  DISPATCHES: 'Dispatches',
+  SALES: 'Sales',
+  ACCOUNTS: 'Accounts',
+  INVENTORY: 'Inventory',
+  CUSTOMERS: 'Customers',
+  SUPPLIERS: 'Suppliers',
+  PURCHASES: 'Purchases',
+  SETTINGS: 'Settings'
+};
+
+const PERMISSIONS = {
+  VIEW: 'view',
+  EDIT: 'edit',
+  ALTER: 'alter'
+};
 
 // Define role-based permissions for each module
 const rolePermissions = {

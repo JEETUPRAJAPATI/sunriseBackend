@@ -2,13 +2,13 @@ import express from 'express';
 import User from './models/User.js';
 import { generateToken, authenticateToken } from './middleware/auth.js';
 import { getUserModules } from './utils/permissions.js';
-import {
-  getUsers,
-  getUserById,
-  createUser,
-  updateUser,
-  deleteUser,
-  resetUserPassword
+import { 
+  getUsers, 
+  getUserById, 
+  createUser, 
+  updateUser, 
+  deleteUser, 
+  resetUserPassword 
 } from './controllers/userController.js';
 import bcrypt from 'bcryptjs';
 import { profileUpload } from './middleware/upload.js';
@@ -28,7 +28,7 @@ router.post('/auth/login', async (req, res) => {
   try {
     console.log('=== LOGIN ROUTE HIT ===');
     console.log('Request body:', req.body);
-
+    
     const { username, password } = req.body;
 
     if (!username || !password) {
@@ -36,12 +36,12 @@ router.post('/auth/login', async (req, res) => {
     }
 
     console.log('Looking for user with username:', username);
-
+    
     // Check all users first
     const allUsers = await User.find({}, 'username email role');
     console.log('All users in database:', allUsers);
-
-    const user = await User.findOne({
+    
+    const user = await User.findOne({ 
       $or: [
         { username: username },
         { email: username }
@@ -68,7 +68,7 @@ router.post('/auth/login', async (req, res) => {
     console.log('Comparing password with hash...');
     const isValidPassword = await bcrypt.compare(password, user.password);
     console.log('Password valid:', isValidPassword);
-
+    
     if (!isValidPassword) {
       console.log('Invalid password');
       return res.status(401).json({ message: 'Invalid credentials' });
@@ -79,12 +79,7 @@ router.post('/auth/login', async (req, res) => {
     }
 
     // Generate JWT token
-    const token = generateToken({
-      userId: user._id,
-      username: user.username,
-      role: user.role,
-      permissions: user.permissions || []
-    });
+    const token = generateToken(user._id.toString());
 
     // Get user modules
     const userModules = getUserModules(user.role);
@@ -110,10 +105,10 @@ router.post('/auth/login', async (req, res) => {
       user: userResponse,
       token
     };
-
+    
     console.log('=== LOGIN SUCCESS ===');
     console.log('User:', userResponse.username, 'Role:', userResponse.role);
-
+    
     res.status(200).json(response);
   } catch (error) {
     console.error('Login error:', error);
@@ -125,8 +120,9 @@ router.post('/auth/login', async (req, res) => {
 router.get('/auth/me', authenticateToken, async (req, res) => {
   try {
     console.log('=== AUTH/ME ROUTE HIT ===');
-
-    const user = await User.findById(req.user.userId).select('-password');
+    
+    const userId = req.user.userId || req.user._id;
+    const user = await User.findById(userId).select('-password');
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -165,7 +161,7 @@ router.post('/auth/logout', (req, res) => {
 router.post('/auth/change-password', authenticateToken, async (req, res) => {
   try {
     console.log('=== CHANGE PASSWORD ROUTE HIT ===');
-
+    
     const { currentPassword, newPassword } = req.body;
 
     if (!currentPassword || !newPassword) {

@@ -23,7 +23,13 @@ import {
   
   // Utility routes
   getLowStockItems,
-  getInventoryStats
+  getInventoryStats,
+  
+  // Excel import/export routes
+  exportItemsToExcel,
+  importItemsFromExcel,
+  exportCategoriesToExcel,
+  exportCustomerCategoriesToExcel
 } from '../controllers/inventoryController.js';
 
 const router = express.Router();
@@ -51,5 +57,11 @@ router.delete('/customer-categories/:id', auth, deleteCustomerCategory);
 // Utility routes
 router.get('/inventory/low-stock', auth, getLowStockItems);
 router.get('/inventory/stats', auth, getInventoryStats);
+
+// Excel import/export routes
+router.get('/items/export', auth, exportItemsToExcel);
+router.post('/items/import', auth, importItemsFromExcel);
+router.get('/categories/export', auth, exportCategoriesToExcel);
+router.get('/customer-categories/export', auth, exportCustomerCategoriesToExcel);
 
 export default router;
