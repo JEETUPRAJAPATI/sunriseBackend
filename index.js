@@ -69,8 +69,6 @@ app.use((req, res, next) => {
     await connectDB();
     // Create seed users after database connection
     // await createSeedUsers();
-    const { seedCompanyData } = await import('./seed/seedCompanies.js');
-    await seedCompanyData();
     // Seed inventory data
     // await seedInventoryData();
     // Register routes
