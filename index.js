@@ -69,17 +69,24 @@ app.use((req, res, next) => {
     await connectDB();
     // Create seed users after database connection
     // await createSeedUsers();
-
+    const { seedCompanyData } = await import('./seed/seedCompanies.js');
+    await seedCompanyData();
     // Seed inventory data
     // await seedInventoryData();
     // Register routes
+    // API Routes
     const authRoutes = (await import("./auth-routes.js")).default;
     const profileRoutes = (await import("./routes/profileRoutes.js")).default;
     const inventoryRoutes = (await import("./routes/inventoryRoutes.js")).default;
-
+    const customerRoutes = (await import("./routes/customerRoutes.js")).default;
+    const supplierRoutes = (await import("./routes/supplierRoutes.js")).default;
+    const companyRoutes = (await import("./routes/companyRoutes.js")).default;
     app.use("/api", authRoutes);
     app.use("/api", profileRoutes);
     app.use("/api", inventoryRoutes);
+    app.use("/api", customerRoutes);
+    app.use("/api", supplierRoutes);
+    app.use("/api/companies", companyRoutes);
 
     console.log("✅ All API routes registered");
 
@@ -92,11 +99,7 @@ app.use((req, res, next) => {
 
     // Catch-all for unknown API routes
     app.use("/api/*", (req, res) => {
-      res.status(404).json({
-        error: "API endpoint not found",
-        method: req.method,
-        path: req.originalUrl
-      });
+      res.status(404).json({ error: "API endpoint not found", method: req.method, path: req.originalUrl });
     });
 
     // Error handler
