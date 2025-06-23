@@ -1,7 +1,7 @@
 import { Item, Category, CustomerCategory } from '../models/Inventory.js';
 import * as XLSX from 'xlsx';
 import multer from 'multer';
-import { USER_ROLES } from '../shared/schema.js';
+import { USER_ROLES } from '../../shared/schema.js';
 
 // Helper function to check inventory permissions
 const checkInventoryPermission = (user, action) => {
