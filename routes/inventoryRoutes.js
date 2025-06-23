@@ -8,23 +8,23 @@ import {
   updateItem,
   deleteItem,
   adjustStock,
-  
+
   // Category routes
   getCategories,
   createCategory,
   updateCategory,
   deleteCategory,
-  
+
   // Customer category routes
   getCustomerCategories,
   createCustomerCategory,
   updateCustomerCategory,
   deleteCustomerCategory,
-  
+
   // Utility routes
   getLowStockItems,
   getInventoryStats,
-  
+
   // Excel import/export routes
   exportItemsToExcel,
   importItemsFromExcel,
@@ -60,7 +60,7 @@ router.get('/inventory/stats', auth, getInventoryStats);
 
 // Excel import/export routes
 router.get('/items/export', auth, exportItemsToExcel);
-router.post('/items/import', auth, importItemsFromExcel);
+router.post('/inventory/items/import', auth, importItemsFromExcel);
 router.get('/categories/export', auth, exportCategoriesToExcel);
 router.get('/customer-categories/export', auth, exportCustomerCategoriesToExcel);
 

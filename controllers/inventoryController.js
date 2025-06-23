@@ -831,9 +831,21 @@ export const exportItemsToExcel = async (req, res) => {
 // Import items from Excel
 export const importItemsFromExcel = [upload.single('file'), async (req, res) => {
   try {
+    console.log('Import request received:', req.file ? 'File present' : 'No file');
+
     if (!req.file) {
-      return res.status(400).json({ message: 'No file uploaded' });
+      return res.status(400).json({
+        success: false,
+        message: 'No file uploaded',
+        results: null
+      });
     }
+
+    console.log('File details:', {
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size
+    });
 
     // Parse Excel file
     const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
@@ -841,8 +853,14 @@ export const importItemsFromExcel = [upload.single('file'), async (req, res) => 
     const worksheet = workbook.Sheets[sheetName];
     const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
+    console.log(`Parsed ${jsonData.length} rows from Excel`);
+
     if (jsonData.length === 0) {
-      return res.status(400).json({ message: 'Excel file is empty or has no valid data' });
+      return res.status(400).json({
+        success: false,
+        message: 'Excel file is empty or has no valid data',
+        results: null
+      });
     }
 
     const results = {
@@ -858,48 +876,84 @@ export const importItemsFromExcel = [upload.single('file'), async (req, res) => 
       const rowNumber = i + 2; // Excel row number (accounting for header)
 
       try {
-        // Map Excel columns to database fields
-        const itemData = {
-          code: row['Item Code'] || row['Code'] || `AUTO-${Date.now()}-${i}`,
-          name: row['Item Name'] || row['Name'] || '',
-          category: row['Category'] || '',
-          subCategory: row['Subcategory'] || row['Sub Category'] || row['SubCategory'] || '',
-          customerCategory: row['Customer Category'] || 'General',
-          unit: row['Unit'] || 'pieces',
-          purchasePrice: parseFloat(row['Purchase Price'] || row['Cost Price'] || row['Cost'] || 0),
-          salePrice: parseFloat(row['Sale Price'] || row['Unit Price'] || row['Price'] || 0),
-          qty: parseInt(row['Quantity'] || row['Qty'] || 0),
-          minStock: parseInt(row['Min Stock'] || row['Minimum Stock'] || 0),
-          maxStock: parseInt(row['Max Stock'] || row['Maximum Stock'] || 0),
-          location: row['Location'] || '',
-          description: row['Description'] || '',
-          supplier: row['Supplier'] || ''
+        // Enhanced field mapping with null/undefined safety
+        const safeString = (value) => value ? String(value).trim() : '';
+        const safeNumber = (value) => {
+          const num = Number(value);
+          return isNaN(num) ? 0 : num;
         };
 
-        // Validate required fields
+        const itemData = {
+          name: safeString(row['Item Name'] || row['Name'] || row['ItemName']),
+          code: safeString(row['Item Code'] || row['Code'] || row['ItemCode']),
+          description: safeString(row['Description'] || row['Desc']),
+          category: safeString(row['Category'] || row['Cat']),
+          subCategory: safeString(row['Sub Category'] || row['SubCategory'] || row['Subcategory']),
+          customerCategory: safeString(row['Customer Category'] || row['CustomerCategory'] || row['CustCategory']),
+          type: safeString(row['Type'] || row['ItemType'] || row['Product Type']) || 'Product',
+          importance: safeString(row['Importance'] || row['Priority']) || 'Normal',
+          unit: safeString(row['Unit'] || row['UOM']) || 'pieces',
+          qty: safeNumber(row['Current Stock'] || row['Qty'] || row['Quantity'] || row['Stock']),
+          minStock: safeNumber(row['Min Stock'] || row['MinStock'] || row['Minimum Stock']),
+          maxStock: safeNumber(row['Max Stock'] || row['MaxStock'] || row['Maximum Stock']),
+          stdCost: safeNumber(row['Standard Cost'] || row['StdCost'] || row['Std Cost']),
+          purchaseCost: safeNumber(row['Purchase Price'] || row['Purchase Cost'] || row['PurchaseCost']),
+          salePrice: safeNumber(row['Sale Price'] || row['SalePrice'] || row['Selling Price']),
+          mrp: safeNumber(row['MRP'] || row['Mrp'] || row['Maximum Retail Price']),
+          gst: safeNumber(row['GST'] || row['Gst'] || row['Tax'] || row['GST %']),
+          hsn: safeString(row['HSN'] || row['Hsn'] || row['HSN Code']),
+          batch: safeString(row['Batch'] || row['Batch No']),
+          store: safeString(row['Store'] || row['Location'] || row['Warehouse'] || row['Store Location']),
+          leadTime: safeNumber(row['Lead Time'] || row['LeadTime']),
+          internalManufacturing: String(row['Internal Manufacturing'] || row['InternalManufacturing'] || 'NO').toLowerCase() === 'yes',
+          purchase: String(row['Purchase Allowed'] || row['Purchase'] || 'YES').toLowerCase() === 'yes',
+          internalNotes: safeString(row['Internal Notes'] || row['Notes'])
+        };
+
+        console.log(`Processing row ${rowNumber}:`, {
+          originalName: row['Item Name'],
+          originalCode: row['Item Code'],
+          parsedName: itemData.name,
+          parsedCode: itemData.code,
+          parsedType: itemData.type
+        });
+
+        // Validate required fields with better error messages
         if (!itemData.name) {
-          results.errors.push(`Row ${rowNumber}: Item name is required`);
-          results.failed++;
-          continue;
+          throw new Error('Item name is required and cannot be empty');
         }
 
-        if (!itemData.category) {
-          results.errors.push(`Row ${rowNumber}: Category is required`);
-          results.failed++;
-          continue;
+        // Ensure type has a valid value
+        const validTypes = ['Product', 'Service', 'Raw Material', 'Finished Good'];
+        if (!validTypes.includes(itemData.type)) {
+          itemData.type = 'Product';
         }
 
-        // Check if item code already exists
-        const existingItem = await Item.findOne({ code: itemData.code });
+        // Ensure importance has a valid value
+        const validImportance = ['Low', 'Normal', 'High', 'Critical'];
+        if (!validImportance.includes(itemData.importance)) {
+          itemData.importance = 'Normal';
+        }
+
+        // Auto-generate code if not provided
+        if (!itemData.code) {
+          const prefix = itemData.type === 'Product' ? 'PRO' : 'SER';
+          const count = await Item.countDocuments({ code: new RegExp(`^${prefix}\\d{4}$`) });
+          itemData.code = `${prefix}${String(count + 1).padStart(4, '0')}`;
+        }
+
+        // Check for duplicate code and auto-generate new one if exists
+        let existingItem = await Item.findOne({ code: itemData.code });
         if (existingItem) {
-          // Update existing item
-          const updatedItem = await Item.findByIdAndUpdate(existingItem._id, itemData, { new: true });
-          console.log(`Updated existing item: ${itemData.name} (${itemData.code}) - ID: ${updatedItem._id}`);
-        } else {
-          // Create new item
-          const newItem = await Item.create(itemData);
-          console.log(`Created new item: ${itemData.name} (${itemData.code}) - ID: ${newItem._id}`);
+          console.log(`Code ${itemData.code} already exists, auto-generating new code...`);
+          const prefix = itemData.type === 'Product' ? 'PRO' : 'SER';
+          const count = await Item.countDocuments({ code: new RegExp(`^${prefix}\\d{4}$`) });
+          itemData.code = `${prefix}${String(count + 1).padStart(4, '0')}`;
         }
+
+        // Create new item
+        const newItem = await Item.create(itemData);
+        console.log(`Created new item: ${itemData.name} (${itemData.code}) - ID: ${newItem._id}`);
 
         results.successful++;
       } catch (rowError) {
